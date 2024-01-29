@@ -65,6 +65,11 @@ sleep 2
 sudo rm -rf node_modules
 npm install
 sudo rm -rf dist
+
+cp .env.example .env
+
+nano .env
+
 npm run build
 
 echo " "
