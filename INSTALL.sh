@@ -122,7 +122,7 @@ sleep 2
 
 
 npm install
-
+cp .env.example .env
 nano .env
 
 rm -rf build
