@@ -42,12 +42,6 @@ Um sistema de tickets muito simples baseado em mensagens do WhatsApp, que permit
 - O Sistema Press Ticket foi desenvolvido com base no [Sistema Whaticket](https://github.com/canove/whaticket), desenvolvido por [Cassio Santos](https://github.com/canove).
 
 
-## Grupo no Telegram
-
-<a href="https://t.me/+akuzB2BzXitlMDkx">
-    <img alt="Telegram" src="https://img.shields.io/badge/telegram-online-blue.svg?style=for-the-badge&logo=telegram">
-</a>
-
 ## Instalação
 
 - [Localhost](https://github.com/rtenorioh/Press-Ticket/blob/main/docs/INSTALL_localhost.md);
