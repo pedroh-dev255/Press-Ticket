@@ -18,4 +18,6 @@ pm2 start server.js --name whaticket-frontend
 
 pm2 save
 
-pm2 startup ubuntu -u `press`
+pm2 startup ubuntu -u press
+
+sudo env PATH=$PATH:/usr/bin pm2 startup ubuntu -u press --hp /home/press
