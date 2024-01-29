@@ -24,7 +24,9 @@ apt-get install curl -y
 
 curl -s https://deb.nodesource.com/setup_16.x | sudo bash
 
-apt-get install nodejs
+apt-get install nodejs -y
+
+npm i pm2 -g
 
 echo "ATUALIZANDO PARA A VERSÃO MAIS RECENTE..."
 echo " "
