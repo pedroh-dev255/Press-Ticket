@@ -120,19 +120,24 @@ echo " "
 
 sleep 2
 
-sudo rm -rf node_modules
+
 npm install
+
+nano .env
+
 rm -rf build
 npm run build
 
+
 echo " "
-echo "RESTART PM2"
+echo "Criando usuario 'press' "
 echo " "
 
 sleep 2
 
-pm2 restart all
 
-echo " "
-echo "PRESS TICKET ATUALIZADO COM SUCESSO!!!"
-echo " "
+adduser press
+
+usermod -aG sudo press
+
+su - press
