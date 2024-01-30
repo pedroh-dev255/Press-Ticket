@@ -135,9 +135,18 @@ echo " "
 
 sleep 2
 
+cd /home/Press-Ticket
 
-adduser press
+cd backend
 
-usermod -aG sudo press
+pm2 start dist/server.js --name whaticket-backend
 
-su - press
+cd ../frontend
+
+pm2 start server.js --name whaticket-frontend
+
+pm2 save
+
+pm2 startup ubuntu -u root
+
+#sudo env PATH=$PATH:/usr/bin pm2 startup ubuntu -u press --hp /home/press
