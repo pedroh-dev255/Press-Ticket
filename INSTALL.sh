@@ -130,7 +130,7 @@ npm run build
 
 
 echo " "
-echo "Criando usuario 'press' "
+echo "Configurando PM2 "
 echo " "
 
 sleep 2
@@ -148,5 +148,3 @@ pm2 start server.js --name whaticket-frontend
 pm2 save
 
 pm2 startup ubuntu -u root
-
-#sudo env PATH=$PATH:/usr/bin pm2 startup ubuntu -u press --hp /home/press
