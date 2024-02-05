@@ -29,6 +29,8 @@ import toastError from "../../errors/toastError";
 import ColorPicker from "../ColorPicker";
 import { Colorize } from "@material-ui/icons";
 
+
+const [loading, setLoading] = useState(false);
 const useStyles = makeStyles(theme => ({
 	root: {
 		display: "flex",
