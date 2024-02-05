@@ -79,6 +79,19 @@ const QueueSchema = Yup.object().shape({
 	absenceMessage: Yup.string()
 });
 
+const handleClickMsgVar = async (msgVar, setValueFunc) => {
+    const el = messageInputRef.current;
+    const firstHalfText = el.value.substring(0, el.selectionStart);
+    const secondHalfText = el.value.substring(el.selectionEnd);
+    const newCursorPos = el.selectionStart + msgVar.length;
+
+    setValueFunc("message", `${firstHalfText}${msgVar}${secondHalfText}`);
+
+    await new Promise(r => setTimeout(r, 100));
+    messageInputRef.current.setSelectionRange(newCursorPos, newCursorPos);
+  };
+
+
 const QueueModal = ({ open, onClose, queueId }) => {
 	const classes = useStyles();
 
