@@ -26,8 +26,6 @@ import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import ColorPicker from "../ColorPicker";
 import { Colorize } from "@material-ui/icons";
-
-const messageInputRef = useRef();
 const useStyles = makeStyles(theme => ({
 	root: {
 		display: "flex",
