@@ -29,7 +29,7 @@ import toastError from "../../errors/toastError";
 import ColorPicker from "../ColorPicker";
 import { Colorize } from "@material-ui/icons";
 
-
+const messageInputRef = useRef();
 const [loading, setLoading] = useState(false);
 const useStyles = makeStyles(theme => ({
 	root: {
@@ -174,7 +174,7 @@ const QueueModal = ({ open, onClose, queueId }) => {
 						}, 400);
 					}}
 				>
-					{({ touched, errors, isSubmitting, values }) => (
+					{({ touched, errors, isSubmitting, values, setFieldValue }) => (
 						<Form>
 							<DialogContent dividers>
 								<Field
