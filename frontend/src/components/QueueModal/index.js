@@ -19,18 +19,15 @@ import {
 	makeStyles,
 	TextField,
 } from "@material-ui/core";
-import WithSkeleton from "../WithSkeleton";
 import { green } from "@material-ui/core/colors";
 import { toast } from "react-toastify";
 import { i18n } from "../../translate/i18n";
-import MessageVariablesPicker from "../MessageVariablesPicker";
 import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import ColorPicker from "../ColorPicker";
 import { Colorize } from "@material-ui/icons";
 
 const messageInputRef = useRef();
-const [loading, setLoading] = useState(false);
 const useStyles = makeStyles(theme => ({
 	root: {
 		display: "flex",
@@ -78,18 +75,6 @@ const QueueSchema = Yup.object().shape({
 	endWork: Yup.string(),
 	absenceMessage: Yup.string()
 });
-
-const handleClickMsgVar = async (msgVar, setValueFunc) => {
-    const el = messageInputRef.current;
-    const firstHalfText = el.value.substring(0, el.selectionStart);
-    const secondHalfText = el.value.substring(el.selectionEnd);
-    const newCursorPos = el.selectionStart + msgVar.length;
-
-    setValueFunc("message", `${firstHalfText}${msgVar}${secondHalfText}`);
-
-    await new Promise(r => setTimeout(r, 100));
-    messageInputRef.current.setSelectionRange(newCursorPos, newCursorPos);
-  };
 
 
 const QueueModal = ({ open, onClose, queueId }) => {
