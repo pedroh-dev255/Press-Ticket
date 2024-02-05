@@ -23,7 +23,7 @@ import {
 import { green } from "@material-ui/core/colors";
 import { toast } from "react-toastify";
 import { i18n } from "../../translate/i18n";
-
+import MessageVariablesPicker from "../MessageVariablesPicker";
 import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import ColorPicker from "../ColorPicker";
@@ -308,6 +308,12 @@ const QueueModal = ({ open, onClose, queueId }) => {
 										margin="dense"
 									/>
 								</div>
+								<WithSkeleton loading={loading}>
+						                  <MessageVariablesPicker
+						                    disabled={isSubmitting}
+						                    onClick={value => handleClickMsgVar(value, setFieldValue)}
+						                  />
+						                </WithSkeleton>
 							</DialogContent>
 							<DialogActions>
 								<Button
