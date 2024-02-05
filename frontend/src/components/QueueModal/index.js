@@ -174,7 +174,7 @@ const QueueModal = ({ open, onClose, queueId }) => {
 						}, 400);
 					}}
 				>
-					{({ touched, errors, isSubmitting, values, setFieldValue }) => (
+					{({ touched, errors, isSubmitting, values}) => (
 						<Form>
 							<DialogContent dividers>
 								<Field
@@ -323,12 +323,6 @@ const QueueModal = ({ open, onClose, queueId }) => {
 										margin="dense"
 									/>
 								</div>
-								<WithSkeleton loading={loading}>
-						                  <MessageVariablesPicker
-						                    disabled={isSubmitting}
-						                    onClick={value => handleClickMsgVar(value, setFieldValue)}
-						                  />
-						                </WithSkeleton>
 							</DialogContent>
 							<DialogActions>
 								<Button
