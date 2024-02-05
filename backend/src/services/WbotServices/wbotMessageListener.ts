@@ -213,15 +213,16 @@ const verifyMediaMessage = async (
 };
 
 const prepareLocation = (msg: WbotMessage): WbotMessage => {
-  const gmapsUrl = `https://maps.google.com/maps?q=${msg.location.latitude}%2C${msg.location.longitude}&z=17`;
+  const gmapsUrl = `https://maps.google.com/maps?q=${msg.location.latitude},${msg.location.longitude}&z=17`;
   msg.body = `data:image/png;base64,${msg.body}|${gmapsUrl}`;
   msg.body += `|${
-    msg.location.description
+    msg.location && msg.location.description
       ? msg.location.description
       : `${msg.location.latitude}, ${msg.location.longitude}`
   }`;
   return msg;
 };
+
 
 const verifyMessage = async (
   msg: WbotMessage,
