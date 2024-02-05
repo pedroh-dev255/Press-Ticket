@@ -19,7 +19,7 @@ import {
 	makeStyles,
 	TextField,
 } from "@material-ui/core";
-
+import WithSkeleton from "../WithSkeleton";
 import { green } from "@material-ui/core/colors";
 import { toast } from "react-toastify";
 import { i18n } from "../../translate/i18n";
