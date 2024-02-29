@@ -216,8 +216,8 @@ const prepareLocation = (msg: WbotMessage): WbotMessage => {
   const gmapsUrl = `https://maps.google.com/maps?q=${msg.location.latitude},${msg.location.longitude}&z=17`;
   msg.body = `data:image/png;base64,${msg.body}|${gmapsUrl}`;
   
-  if (msg.location && msg.location.description) {
-    msg.body += `|${msg.location.description}`;
+  if (msg.location && msg.location.options) {
+    msg.body += `|${msg.location.options}`;
   } else {
     msg.body += `|${msg.location.latitude}, ${msg.location.longitude}`;
   }
@@ -249,8 +249,8 @@ const verifyMessage = async (
   await ticket.update({
     lastMessage:
       msg.type === "location"
-        ? msg.location.description
-          ? `Localization - ${msg.location.description.split("\\n")[0]}`
+        ? msg.location.options
+          ? `Localization - ${msg.location.options}`
           : "Localization"
         : msg.body
   });
