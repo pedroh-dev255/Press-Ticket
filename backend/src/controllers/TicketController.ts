@@ -102,12 +102,12 @@ export const update = async (
   });
 
   if (ticketData.transf) {
-    const { greetingMessage } = await ShowQueueService(ticketData.queueId);
-    if (greetingMessage) {
-      const msgtxt = “Mensagem Automática: \n”+greetingMessage;
-      await SendWhatsAppMessage({ body: msgtxt, ticket });
-    }
+  const {greetingMessage} = await ShowQueueService(ticketData.queueId);
+  if (greetingMessage) {
+    const msgtxt = "Mensagem Automática: \n" + greetingMessage;
+    await SendWhatsAppMessage({body: msgtxt, ticket});
   }
+}
 
   if (ticket.status === "closed" && ticket.isGroup === false) {
     const whatsapp = await ShowWhatsAppService(ticket.whatsappId);
