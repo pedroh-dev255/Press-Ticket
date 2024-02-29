@@ -104,7 +104,7 @@ export const update = async (
   if (ticketData.transf) {
     const { greetingMessage } = await ShowQueueService(ticketData.queueId);
     if (greetingMessage) {
-      const msgtxt = formatBody(`\u200e${greetingMessage}`);
+      const msgtxt = “Mensagem Automática: \n”+greetingMessage;
       await SendWhatsAppMessage({ body: msgtxt, ticket });
     }
   }
