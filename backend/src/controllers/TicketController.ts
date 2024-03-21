@@ -104,7 +104,11 @@ export const update = async (
   // Atualiza o ticket para os parametros novos (usuario, fila...)
   const { ticket } = await UpdateTicketService({ ticketData, ticketId });
 
-  if (ticketData.transf) {
+  const settingsTransfTicket = await ListSettingsServiceOne({key:"transferTicket"});
+  const transfTickets = (JSON.stringify("enabled"));
+
+
+  if ((JSON.stringify(settingsTransfTicket?.value)) === transfTickets && ticketData.transf) {
     if (ticketShow.userId !== ticketData.userId && ticketShow.queueId === ticketData.queueId) {
       // const nomeAntigo = await ShowUserService(ticketShow.userId);
       const nome = await ShowUserService(ticketData.userId);

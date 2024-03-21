@@ -255,7 +255,7 @@ const Settings = () => {
 									checked={settings && settings.length > 0 && getSettingValue("transferTicket") === "enabled"}
 									onChange={handleChangeBooleanSetting} name="transferTicket"
 								/>}
-							label={i18n.t("settings.settings.transfTicket.name")}
+							label={i18n.t("settings.settings.transfTicket.note")}
 						/>
 					</Tooltip>
 				</Paper>
