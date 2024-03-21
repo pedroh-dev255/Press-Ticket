@@ -9,6 +9,7 @@ import UpdateTicketService from "../services/TicketServices/UpdateTicketService"
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import ShowQueueService from "../services/QueueService/ShowQueueService";
+import ShowUserService from "../services/UserServices/ShowUserService";
 import formatBody from "../helpers/Mustache";
 import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
 
