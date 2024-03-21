@@ -8,7 +8,7 @@ module.exports = {
         {
           name: "Pedro",
           email: "henriquepedro1912@gmail.com",
-          passwordHash: "$2a$08$LSQAkixvKJRnQppB3P/HIOd8svSrxiVP5Y6pOILwSS2RyVVX0YoOi",
+          passwordHash: "$2a$08$VX5b1o.7CAHgV./XlBguruTLIH7YR987OaWaMK1RRkMnNn9VBgmca",
           profile: "admin",
           tokenVersion: 0,
           createdAt: new Date(),
