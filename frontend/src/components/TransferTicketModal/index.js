@@ -197,6 +197,7 @@ const TransferTicketModal = ({ modalOpen, onClose, ticketid, ticketWhatsappId })
 								<InputLabel>{i18n.t("transferTicketModal.fieldConnectionLabel")}</InputLabel>
 								<Select
 									value={selectedWhatsapp}
+							    		required
 									onChange={(e) => setSelectedWhatsapp(e.target.value)}
 									label={i18n.t("transferTicketModal.fieldConnectionPlaceholder")}
 								>
