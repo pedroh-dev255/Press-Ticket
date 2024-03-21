@@ -245,24 +245,22 @@ const Settings = () => {
 				
 
 
-				
+
 				<Typography variant="body2" gutterBottom></Typography>
 				<Paper className={classes.paper}>
-					<Typography variant="button">
-						{i18n.t("settings.settings.transfTicket.name")}
-					</Typography>	
+					<Tooltip title={i18n.t("settings.settings.transfTicket.name")}>
+						<FormControlLabel
+							control={
+								<IOSSwitch
+									checked={settings && settings.length > 0 && getSettingValue("transferTicket") === "enabled"}
+									onChange={handleChangeBooleanSetting} name="transferTicket"
+								/>}
+							label={i18n.t("settings.settings.transfTicket.name")}
+						/>
+					</Tooltip>
 				</Paper>
 					
-				<Paper className={classes.paper}>
-					<IOSSwitch
-						className={classes.settingOption}
-						id="transferTicket-setting"
-						name="transferTicket"
-						checked={settings && settings.length > 0 && getSettingValue("transferTicket") === "enabled"}
-						onChange={handleChangeBooleanSetting} 
-						>
-					</IOSSwitch>
-				</Paper>
+				
 					
 
 
