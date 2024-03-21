@@ -245,6 +245,29 @@ const Settings = () => {
 
 
 			</Container>
+
+			<Grid container spacing={1}>
+					<Grid item xs={10}>
+						<Paper className={classes.paper}>
+							<Typography variant="button">
+								{i18n.t("settings.settings.transfTicket.name")}
+							</Typography>	
+						</Paper>
+					</Grid>
+					<Grid item xs={2}>
+						<Paper className={classes.paper}>
+							<IOSSwitch
+								className={classes.settingOption}
+								id="transferTicket-setting"
+								name="transferTicket"
+								checked={settings && settings.length > 0 && getSettingValue("transferTicket") === "enabled"}
+								onChange={handleChangeBooleanSetting} 
+								>
+							</IOSSwitch>
+						</Paper>
+					</Grid>
+				</Grid>
+
 			<Container className={classes.container} maxWidth="xs">
 
 				<Typography variant="body2" gutterBottom></Typography>

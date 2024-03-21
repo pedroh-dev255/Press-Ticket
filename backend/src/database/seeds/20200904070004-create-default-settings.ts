@@ -24,6 +24,12 @@ module.exports = {
           updatedAt: new Date()
         },
         {
+          key: "transferTicket",
+          value: "disabled",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
           key: "sideMenu",
           value: "disabled",
           createdAt: new Date(),

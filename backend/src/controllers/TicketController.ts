@@ -10,6 +10,7 @@ import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import ShowQueueService from "../services/QueueService/ShowQueueService";
 import formatBody from "../helpers/Mustache";
+import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
 
 type IndexQuery = {
   searchParam: string;
@@ -96,18 +97,31 @@ export const update = async (
   const { ticketId } = req.params;
   const ticketData: TicketData = req.body;
 
-  const { ticket } = await UpdateTicketService({
-    ticketData,
-    ticketId
-  });
+  // Obter o antigo atendente
+  const ticketShow = await ShowTicketService(ticketId);
+
+  // Atualiza o ticket para os parametros novos (usuario, fila...)
+  const { ticket } = await UpdateTicketService({ ticketData, ticketId });
 
   if (ticketData.transf) {
-  const {greetingMessage} = await ShowQueueService(ticketData.queueId);
-  if (greetingMessage) {
-    const msgtxt = "Mensagem Automática: \n" + greetingMessage;
-    await SendWhatsAppMessage({body: msgtxt, ticket});
+    if (ticketShow.userId !== ticketData.userId && ticketShow.queueId === ticketData.queueId) {
+      // const nomeAntigo = await ShowUserService(ticketShow.userId);
+      const nome = await ShowUserService(ticketData.userId);
+      const msgtxt = "*Mensagem Automática*:\nVocê foi transferido(a) para o atendente *" + nome.name + "*\nAguarde um momento, iremos atende-lo(a)!";
+      await SendWhatsAppMessage({ body: msgtxt, ticket });
+    } else
+    if (ticketData.userId) {
+      const { name } = await ShowQueueService(ticketData.queueId);
+      const nome = await ShowUserService(ticketData.userId);
+      const msgtxt = "*Mensagem Automática*:\nVocê foi transferido(a) para o departamento *" + name + "* e será atendido por *" + nome.name + "*\nAguarde um momento, iremos atende-lo(a)!";
+      await SendWhatsAppMessage({ body: msgtxt, ticket });
+    }
+    else {
+      const { name } = await ShowQueueService(ticketData.queueId);
+      const msgtxt = "*Mensagem Automática*:\nVocê foi transferido(a) para o departamento *" + name + "*\nAguarde um momento, iremos atende-lo(a)!";
+      await SendWhatsAppMessage({ body: msgtxt, ticket });
+    }
   }
-}
 
   if (ticket.status === "closed" && ticket.isGroup === false) {
     const whatsapp = await ShowWhatsAppService(ticket.whatsappId);
