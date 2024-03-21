@@ -525,6 +525,14 @@ const messages = {
               disabled: "Desativado",
             },
           },
+          transfTicket: {
+            name: "Mensagem de Transferencia",
+            note: "Informa o contato que o ticket foi transferido",
+            options: {
+              enabled: "Ativado",
+              disabled: "Desativado",
+            },
+          },
           allTicket: {
             name: "Todos podem ver o chamado sem departamento",
             note: "Ative essa função para deixar todos os usuarios verem os chamados sem setor",
