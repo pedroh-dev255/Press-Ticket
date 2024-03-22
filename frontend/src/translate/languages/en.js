@@ -523,6 +523,14 @@ const messages = {
               disabled: "Disabled",
             },
           },
+          transfTicket: { 
+            name: "Transfer Ticket Message", 
+            note: "Informs the contact that the ticket has been transferred", 
+            options: { 
+              enabled: "Enabled", 
+              disabled: "Disabled", 
+            }, 
+          },
           allTicket: {
             name: "Everyone can see the ticket without department",
             note: "Activate this function to let all users see tickets without sector",
