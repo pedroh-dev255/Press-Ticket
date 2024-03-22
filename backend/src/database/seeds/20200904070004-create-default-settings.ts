@@ -30,6 +30,12 @@ module.exports = {
           updatedAt: new Date()
         },
         {
+          key: "messageAccept",
+          value: "disabled",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
           key: "sideMenu",
           value: "disabled",
           createdAt: new Date(),

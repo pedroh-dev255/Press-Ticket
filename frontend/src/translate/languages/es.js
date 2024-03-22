@@ -531,6 +531,14 @@ const messages = {
               disabled: "Desactivado",
             },
           },
+          messageAccept: {
+            name: "Mensaje de aceite de ticket",
+            note: "Informa al contacto que se ha usuario aceitado el ticket",
+            options: {
+              enabled: "Activado",
+              disabled: "Desactivado",
+            },
+          },
           allTicket: {
             name: "Todo el mundo puede ver el ticket sin departamento",
             note: "Active esta función para que todos los usuarios vean los boletos sin sector",

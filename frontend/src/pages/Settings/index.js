@@ -375,6 +375,19 @@ const Settings = () => {
 						</Select>
 					</Paper>
 				</Tooltip>
+				<Typography variant="body2" gutterBottom></Typography>
+				<Paper className={classes.paper}>
+					<Tooltip title={i18n.t("settings.settings.messageAccept.note")}>
+						<FormControlLabel
+							control={
+								<IOSSwitch
+									checked={settings && settings.length > 0 && getSettingValue("messageAccept") === "enabled"}
+									onChange={handleChangeBooleanSetting} name="messageAccept"
+								/>}
+							label={i18n.t("settings.settings.messageAccept.name")}
+						/>
+					</Tooltip>
+				</Paper>
 			</Container>
 		</div>
 	);

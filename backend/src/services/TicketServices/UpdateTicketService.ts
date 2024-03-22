@@ -5,6 +5,7 @@ import Ticket from "../../models/Ticket";
 import SendWhatsAppMessage from "../WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import ShowTicketService from "./ShowTicketService";
+import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 
 interface TicketData {
   status?: string;
@@ -74,6 +75,18 @@ const UpdateTicketService = async ({
       action: "update",
       ticket
     });
+
+  const settingsmessageAccept = await ListSettingsServiceOne({key:"messageAccept"});
+  const messageAccept  = (JSON.stringify("enabled"));
+
+
+  if ((JSON.stringify(settingsmessageAccept ?.value)) === messageAccept) {
+
+    if (status === "open"){
+      const message = "*{{user.name}}* iniciou seu atendimento";
+      await SendWhatsAppMessage({ body: message, ticket });
+    }
+  }
 
   return { ticket, oldStatus, oldUserId };
 };

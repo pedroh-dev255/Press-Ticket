@@ -531,6 +531,14 @@ const messages = {
               disabled: "Disabled", 
             }, 
           },
+          messageAccept: { 
+            name: "Acept Ticket Message", 
+            note: "Informs the contact that the ticket has been accepted by user", 
+            options: { 
+              enabled: "Enabled", 
+              disabled: "Disabled", 
+            }, 
+          },
           allTicket: {
             name: "Everyone can see the ticket without department",
             note: "Activate this function to let all users see tickets without sector",

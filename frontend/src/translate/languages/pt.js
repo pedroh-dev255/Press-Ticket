@@ -533,6 +533,14 @@ const messages = {
               disabled: "Desativado",
             },
           },
+          messageAccept: {
+            name: "Informar Usuario ao iniciar",
+            note: "Informa ao cliente o nome do Usuario que deu o aceite na conversa",
+            options: {
+              enabled: "Ativado",
+              disabled: "Desativado",
+            },
+          },
           allTicket: {
             name: "Todos podem ver o chamado sem departamento",
             note: "Ative essa função para deixar todos os usuarios verem os chamados sem setor",
