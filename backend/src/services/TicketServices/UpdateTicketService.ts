@@ -83,7 +83,7 @@ const UpdateTicketService = async ({
   if ((JSON.stringify(settingsmessageAccept ?.value)) === messageAccept) {
 
     if (status === "open"){
-      const message = "*{{user.name}}* iniciou seu atendimento";
+      const message = "*{{user.name}}* iniciou seu atendimento.\nProtocolo de Atendimento: *{{protocol}} *\n\nAtendimento Iniciado as: *{{hour}}*.";
       await SendWhatsAppMessage({ body: message, ticket });
     }
   }
