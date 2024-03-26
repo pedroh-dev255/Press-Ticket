@@ -6,6 +6,9 @@ import SendWhatsAppMessage from "../WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import ShowTicketService from "./ShowTicketService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 interface TicketData {
   status?: string;
@@ -83,7 +86,7 @@ const UpdateTicketService = async ({
   if ((JSON.stringify(settingsmessageAccept ?.value)) === messageAccept) {
 
     if (status === "open"){
-      const message = "*{{user.name}}* iniciou seu atendimento.\nProtocolo de Atendimento: *{{protocol}} *\n\nAtendimento Iniciado as: *{{hour}}*.";
+      const message = process.env.INIC_PROTO;
       await SendWhatsAppMessage({ body: message, ticket });
     }
   }

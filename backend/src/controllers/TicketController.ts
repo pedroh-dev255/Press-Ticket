@@ -12,6 +12,9 @@ import ShowQueueService from "../services/QueueService/ShowQueueService";
 import ShowUserService from "../services/UserServices/ShowUserService";
 import formatBody from "../helpers/Mustache";
 import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 type IndexQuery = {
   searchParam: string;
@@ -112,18 +115,18 @@ export const update = async (
     if (ticketShow.userId !== ticketData.userId && ticketShow.queueId === ticketData.queueId) {
       // const nomeAntigo = await ShowUserService(ticketShow.userId);
       const nome = await ShowUserService(ticketData.userId);
-      const msgtxt = "*Mensagem Automática*:\nVocê foi transferido(a) para o atendente *" + nome.name + "*\nAguarde um momento, iremos atende-lo(a)!";
+      const msgtxt = process.env.TRANS_USER;
       await SendWhatsAppMessage({ body: msgtxt, ticket });
     } else
     if (ticketData.userId) {
       const { name } = await ShowQueueService(ticketData.queueId);
       const nome = await ShowUserService(ticketData.userId);
-      const msgtxt = "*Mensagem Automática*:\nVocê foi transferido(a) para o departamento *" + name + "* e será atendido por *" + nome.name + "*\nAguarde um momento, iremos atende-lo(a)!";
+      const msgtxt = process.env.TRANS_USER_QUEUE;
       await SendWhatsAppMessage({ body: msgtxt, ticket });
     }
     else {
       const { name } = await ShowQueueService(ticketData.queueId);
-      const msgtxt = "*Mensagem Automática*:\nVocê foi transferido(a) para o departamento *" + name + "*\nAguarde um momento, iremos atende-lo(a)!";
+      const msgtxt = process.env.TRANS_QUEUE;
       await SendWhatsAppMessage({ body: msgtxt, ticket });
     }
   }
