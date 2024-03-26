@@ -4,9 +4,7 @@ import { join } from "path";
 import { promisify } from "util";
 import { writeFile } from "fs";
 import * as Sentry from "@sentry/node";
-import * as dotenv from "dotenv";
 
-dotenv.config();
 
 
 import {
@@ -624,7 +622,7 @@ const handleMessage = async (
     if (msg.type === "call_log" && callSetting === "disabled") {
       const sentMessage = await wbot.sendMessage(
         `${contact.number}@c.us`,
-        process.env.LIGACAO
+        "*Mensagem Automática:*\nAs chamadas de voz e vídeo estão desabilitas para esse WhatsApp, favor enviar uma mensagem de texto. Obrigado"
       );
       await verifyMessage(sentMessage, ticket, contact);
     }
