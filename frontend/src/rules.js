@@ -6,6 +6,7 @@ const rules = {
 		static: [
 			"drawer-admin-items:view",
 			"tickets-manager:showall",
+			"sign-message:disable",
 			"user-modal:editProfile",
 			"user-modal:editQueues",
 			"user-table:editTricked",
