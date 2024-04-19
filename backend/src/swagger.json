@@ -4,13 +4,13 @@
         "title": "Documentação da API do Press Ticket",
         "description": "Documentação da API para envio de mensagens e mídia.",
         "contact": {
-            "email": "robson.tenorio@gmail.com"
+            "email": "pedro@phsolucoes.tech"
         },
-        "version": "1.0.0"
+        "version": "1.7.0"
     },
     "servers": [
         {
-            "url": "https://apisac.pypress.com.br",
+            "url": "https://api.phs-teste-server.tech",
             "description": "API Press Ticket"
         }
     ],
@@ -36,7 +36,7 @@
                             "examples": {
                                 "SEND": {
                                     "value": {
-                                        "number": "5522999999999",
+                                        "number": "5563999999999",
                                         "body": "Mensagem de Teste da API"
                                     }
                                 }
