@@ -9,7 +9,7 @@ Um sistema de tickets muito simples baseado em mensagens do WhatsApp, que permit
 
 | --- | Mínimo | Recomendado |
 | --- | --- | --- |
-| Node JS | 14.x | 16.x |
+| Node JS | 18.x | 20.x |
 | Ubuntu | 18.x | 20.x |
 | Memória RAM | 2Gb | 4Gb |
 ## Referência
