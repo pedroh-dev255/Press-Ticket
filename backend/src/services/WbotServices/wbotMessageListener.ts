@@ -95,7 +95,7 @@ const verifyRevoked = async (msgBody?: string): Promise<void> => {
     }
 
     if (message) {
-      // console.log(message);
+      console.log(message);
       await Message.update(
         { isDeleted: true },
         {
@@ -217,13 +217,13 @@ const verifyMediaMessage = async (
 const prepareLocation = (msg: WbotMessage): WbotMessage => {
   const gmapsUrl = `https://maps.google.com/maps?q=${msg.location.latitude},${msg.location.longitude}&z=17`;
   msg.body = `data:image/png;base64,${msg.body}|${gmapsUrl}`;
-  
+
   if (msg.location && msg.location.options) {
     msg.body += `|${msg.location.options}`;
   } else {
     msg.body += `|${msg.location.latitude}, ${msg.location.longitude}`;
   }
-  
+
   return msg;
 };
 
