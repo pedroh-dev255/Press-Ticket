@@ -33,7 +33,7 @@ const wbotMonitor = async (
       });
     });
 
-    /*
+
     wbot.on("change_battery", async batteryInfo => {
       const { battery, plugged } = batteryInfo;
       logger.info(
@@ -52,7 +52,7 @@ const wbotMonitor = async (
         session: whatsapp
       });
     });
-    */
+
 
     wbot.on("disconnected", async reason => {
       logger.info(`Disconnected session: ${sessionName}, reason: ${reason}`);
