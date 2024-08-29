@@ -17,6 +17,7 @@
   "dependencies": {
     "@sentry/node": "^5.29.2",
     "@types/pino": "^6.3.4",
+    "backend": "file:",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
@@ -43,7 +44,7 @@
     "socket.io": "^3.0.5",
     "swagger-ui-express": "^4.3.0",
     "uuid": "^8.3.2",
-    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#webpack-exodus",
+    "whatsapp-web.js": "^1.23.0",
     "yup": "^0.32.8"
   },
   "devDependencies": {

@@ -95,7 +95,7 @@ const verifyRevoked = async (msgBody?: string): Promise<void> => {
     }
 
     if (message) {
-      console.log(message);
+      //console.log(message);
       await Message.update(
         { isDeleted: true },
         {
