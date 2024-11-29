@@ -28,6 +28,10 @@ app.use(Sentry.Handlers.requestHandler());
 app.use("/public", express.static(uploadConfig.directory));
 app.use(routes);
 
+app.get("/healthcheck", (req: Request, res: Response) => {
+  res.status(200).json({ status: "API is running" });
+});
+
 app.use(Sentry.Handlers.errorHandler());
 
 app.use(async (err: Error, req: Request, res: Response, _: NextFunction) => {
