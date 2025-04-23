@@ -36,6 +36,12 @@ module.exports = {
           updatedAt: new Date()
         },
         {
+          key: "dispMessagesPerDay",
+          value: "10",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
           key: "closeTicketApi",
           value: "disabled",
           createdAt: new Date(),

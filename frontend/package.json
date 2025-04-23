@@ -43,6 +43,7 @@
     "react-whatsmarked": "^0.9.14",
     "react-world-flags": "^1.6.0",
     "recharts": "^2.13.0",
+    "serve": "^14.2.4",
     "socket.io-client": "^3.0.5",
     "use-sound": "^2.0.1",
     "yup": "^0.32.8"

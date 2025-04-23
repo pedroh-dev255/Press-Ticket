@@ -101,6 +101,41 @@ const ComponentSettings = ({ settings, getSettingValue, handleChangeBooleanSetti
                     </Paper>
                 </Tooltip>
             </Grid>
+
+            <Grid item xs={12} sm={6} md={4}>
+                <Tooltip title={t("settings.general.dispMessagesPerDay.note")}>
+                    <Paper className={classes.paper} elevation={3}>
+                        <Typography variant="body1">
+                            {t("settings.general.dispMessagesPerDay.name")}
+                        </Typography>
+                        <Select
+                            margin="dense"
+                            variant="outlined"
+                            native
+                            id="dispMessagesPerDay-setting"
+                            name="dispMessagesPerDay"
+                            value={settings && settings.length > 0 && getSettingValue("dispMessagesPerDay")}
+                            className={classes.settingOption}
+                            onChange={handleChangeSetting}
+                        >
+                            <option value="10">{t("settings.general.dispMessagesPerDay.options.10")}</option>
+                            <option value="25">{t("settings.general.dispMessagesPerDay.options.25")}</option>
+                            <option value="30">{t("settings.general.dispMessagesPerDay.options.30")}</option>
+                            <option value="50">{t("settings.general.dispMessagesPerDay.options.50")}</option>
+                            <option value="100">{t("settings.general.dispMessagesPerDay.options.100")}</option>
+                            <option value="150">{t("settings.general.dispMessagesPerDay.options.150")}</option>
+                            <option value="200">{t("settings.general.dispMessagesPerDay.options.200")}</option>
+                            <option value="250">{t("settings.general.dispMessagesPerDay.options.250")}</option>
+                            <option value="300">{t("settings.general.dispMessagesPerDay.options.300")}</option>
+                            <option value="350">{t("settings.general.dispMessagesPerDay.options.350")}</option>
+                            <option value="400">{t("settings.general.dispMessagesPerDay.options.400")}</option>
+                            <option value="450">{t("settings.general.dispMessagesPerDay.options.450")}</option>
+                            <option value="500">{t("settings.general.dispMessagesPerDay.options.500")}</option>
+                            <option value="1000">{t("settings.general.dispMessagesPerDay.options.1000")}</option>
+                        </Select>
+                    </Paper>
+                </Tooltip>
+            </Grid>
         </Grid>
     );
 };

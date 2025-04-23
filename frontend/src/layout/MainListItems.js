@@ -23,7 +23,8 @@ import {
   SettingsOutlined,
   SyncAlt,
   VpnKeyRounded,
-  WhatsApp
+  WhatsApp,
+  SendTwoTone
 } from "@material-ui/icons";
 import { useTranslation } from "react-i18next";
 import { Can } from "../components/Can";
@@ -136,6 +137,12 @@ const MainListItems = (props) => {
         primary={t("mainDrawer.listItems.tickets")}
         icon={<WhatsApp />}
         active={location.pathname === '/tickets'}
+      />
+      <ListItemLink
+        to="/disp"
+        primary={t("mainDrawer.listItems.disparo")}
+        icon={<SendTwoTone />}
+        active={location.pathname === '/disp'}
       />
       <ListItemLink
         to="/contacts"

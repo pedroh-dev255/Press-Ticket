@@ -20,6 +20,7 @@ import Signup from "../pages/Signup/";
 import Tags from "../pages/Tags";
 import Tickets from "../pages/Tickets/";
 import Users from "../pages/Users";
+import Disparo from "../pages/Disparo";
 import Route from "./Route";
 
 const Routes = ({ toggleTheme, onThemeConfigUpdate }) => {
@@ -37,6 +38,7 @@ const Routes = ({ toggleTheme, onThemeConfigUpdate }) => {
               <Route exact path="/tickets/:ticketId?" component={Tickets} isPrivate />
               <Route exact path="/connections" component={Connections} isPrivate />
               <Route exact path="/contacts" component={Contacts} isPrivate />
+              <Route exact path="/disp" component={Disparo} isPrivate />
               <Route exact path="/users" component={Users} isPrivate />
               <Route exact path="/quickAnswers" component={QuickAnswers} isPrivate />
               <Route exact path="/Settings" render={(props) => <Settings {...props} onThemeConfigUpdate={onThemeConfigUpdate} />} isPrivate />
