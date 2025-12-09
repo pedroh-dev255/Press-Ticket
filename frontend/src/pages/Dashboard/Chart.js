@@ -1,93 +1,109 @@
+import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "@material-ui/core";
-import TextField from "@material-ui/core/TextField";
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+
 import {
-	Area,
-	AreaChart,
 	CartesianGrid,
-	ResponsiveContainer,
-	Tooltip,
 	XAxis,
-	YAxis
+	Tooltip,
+	AreaChart,
+	Area,
+	YAxis,
+	ResponsiveContainer
 } from "recharts";
-import useTickets from "../../hooks/useTickets";
-import CustomTooltip from "./CustomTooltip";
+
+import { startOfHour, parseISO, format } from "date-fns";
+
+import { i18n } from "../../translate/i18n";
 import Title from "./Title";
+import useTickets from "../../hooks/useTickets";
 
 const Chart = () => {
 	const theme = useTheme();
-	const { t } = useTranslation();
-	const [chartData, setChartData] = useState([]);
-	const [startDate, setStartDate] = useState(() => {
-		const d = new Date();
-		d.setDate(d.getDate() - 6);
-		return d.toISOString().substring(0, 10);
-	});
-	const [endDate, setEndDate] = useState(() => {
-		const today = new Date();
-		return today.toISOString().substring(0, 10);
-	});
-	const { tickets } = useTickets({ startDate, endDate, all: true });
+	const date = useRef(new Date().toISOString());
+	const { tickets } = useTickets({ date: date.current });
+	const [chartData, setChartData] = useState([
+		{ time: "00:00", amount: 0 },
+		{ time: "01:00", amount: 0 },
+		{ time: "02:00", amount: 0 },
+		{ time: "03:00", amount: 0 },
+		{ time: "04:00", amount: 0 },
+		{ time: "05:00", amount: 0 },
+		{ time: "06:00", amount: 0 },
+		{ time: "07:00", amount: 0 },
+		{ time: "08:00", amount: 0 },
+		{ time: "09:00", amount: 0 },
+		{ time: "10:00", amount: 0 },
+		{ time: "11:00", amount: 0 },
+		{ time: "12:00", amount: 0 },
+		{ time: "13:00", amount: 0 },
+		{ time: "14:00", amount: 0 },
+		{ time: "15:00", amount: 0 },
+		{ time: "16:00", amount: 0 },
+		{ time: "17:00", amount: 0 },
+		{ time: "18:00", amount: 0 },
+		{ time: "19:00", amount: 0 },
+		{ time: "20:00", amount: 0 },
+		{ time: "21:00", amount: 0 },
+		{ time: "22:00", amount: 0 },
+		{ time: "23:00", amount: 0 }
+	]);
+
+	function CustomTooltip({ payload, label, active }) {
+		if (active) {
+			return (
+				<div>
+					<div style={{ backgroundColor: "#333333ff", borderRadius: "4px", outline: "none" }}>
+						<div>
+							{payload.map((pld) => (
+								<div style={{ display: "inline-block", padding: 10 }}>
+									<div style={{ color: "white", fontWeight: "600", fontSize: "13px" }}>{`${label}`}</div>
+									<div style={{ color: "white", fontWeight: "400", fontSize: "13px" }}>Tickets: {pld.value}</div>
+								</div>
+							))}
+						</div>
+					</div>
+
+					<div
+						style={{
+							width: "0",
+							height: "0",
+							borderLeft: "5px solid transparent",
+							marginLeft: "35px",
+							borderRight: "5px solid transparent",
+							borderTop: "5px solid #333333ff",
+						}}
+					></div>
+				</div>
+			);
+		}
+		return null;
+	};
 
 	useEffect(() => {
-		const start = new Date(startDate);
-		const end = new Date(endDate);
+		setChartData(prevState => {
+			let aux = [...prevState];
 
-		const dateArray = [];
-		for (let d = new Date(start); 
-		d <= end; 
-		d.setDate(d.getDate() + 1)
-	) {
-			dateArray.push(new Date(d).toISOString().substring(0, 10));
-		}
+			aux.forEach(a => {
+				tickets.forEach(ticket => {
+					format(startOfHour(parseISO(ticket.createdAt)), "HH:mm") === a.time &&
+						a.amount++;
+				});
+			});
 
-		const initialChartData = dateArray.map(date => ({
-			date,
-			amount: 0
-		}));
-
-		const updatedChartData = initialChartData.map(item => {
-			const count = tickets.filter(ticket => {
-				const ticketDate = new Date(ticket.createdAt).toISOString().substring(0, 10);
-				return ticketDate === item.date;
-			}).length;
-
-			return { ...item, amount: count };
+			return aux;
 		});
-
-		setChartData(updatedChartData);
-	}, [tickets, startDate, endDate]);
+	}, [tickets]);
 
 	return (
 		<React.Fragment>
-			<Title>{`${t("dashboard.charts.perDay.title")} ${tickets.length}`}</Title>
-			<div
-				style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}
-			>
-				<TextField
-					label={t("dashboard.charts.date.start")}
-					type="date"
-					value={startDate}
-					onChange={e => setStartDate(e.target.value)}
-					InputLabelProps={{ shrink: true }}
-					style={{ marginRight: "16px" }}
-				/>
-				<TextField
-					label={t("dashboard.charts.date.end")}
-					type="date"
-					value={endDate}
-					onChange={e => setEndDate(e.target.value)}
-					InputLabelProps={{ shrink: true }}
-					style={{ marginBottom: "16px" }}
-				/>
-			</div>
+			<Title>{`${i18n.t("dashboard.charts.perDay.title")}${tickets.length}`}</Title>
+		
 			<ResponsiveContainer>
 				<AreaChart
 					data={chartData}
 					barSize={40}
 					width={730}
-					height={300}
+					height={250}
 					margin={{
 						top: 16,
 						right: 16,
@@ -96,9 +112,20 @@ const Chart = () => {
 					}}
 				>
 					<XAxis
-						dataKey="date"
+						tick={tickProps => {
+							const { x, y } = tickProps;
+							return (
+								<circle
+									cx={x}
+									cy={y - 8}
+									r={1}
+									fill={theme.palette.text.secondary}
+								/>
+							);
+						}}
 						tickLine={false}
 						axisLine={false}
+						dataKey="time"
 						stroke={theme.palette.text.secondary}
 					/>
 					<YAxis
@@ -107,17 +134,25 @@ const Chart = () => {
 						stroke={theme.palette.text.secondary}
 						tickLine={false}
 						axisLine={false}
-					/>
+					>
+					</YAxis>
 					<CartesianGrid vertical={false} strokeDasharray="4" opacity={0.3} />
-					<Tooltip content={<CustomTooltip />} cursor={true} />
+					<Tooltip
+						content={<CustomTooltip />}
+						position={{ y: 35 }}
+						animationEasing="ease"
+						cursor={true}
+						shared={false}
+					/>
 					<Area
 						type="monotone"
 						dataKey="amount"
 						stroke={theme.palette.primary.main}
-						strokeWidth={2}
-						fillOpacity={0.7}
-						fill="#3f51b5"
-						activeDot={{ r: 8 }}
+						strokeDasharray="3 4 5 2"
+						strokeWidth={.1}
+						fillOpacity={1}
+						fill="#a0b3f4"
+						activeDot={true}
 					/>
 				</AreaChart>
 			</ResponsiveContainer>

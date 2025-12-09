@@ -1,30 +1,28 @@
-import { Request, Response } from "express";
 import * as Yup from "yup";
+import { Request, Response } from "express";
 import { getIO } from "../libs/socket";
 
-import CreateContactService from "../services/ContactServices/CreateContactService";
-import DeleteAllContactService from "../services/ContactServices/DeleteAllContactService";
-import DeleteContactService from "../services/ContactServices/DeleteContactService";
 import ListContactsService from "../services/ContactServices/ListContactsService";
+import CreateContactService from "../services/ContactServices/CreateContactService";
 import ShowContactService from "../services/ContactServices/ShowContactService";
 import UpdateContactService from "../services/ContactServices/UpdateContactService";
+import DeleteContactService from "../services/ContactServices/DeleteContactService";
+import DeleteAllContactService from "../services/ContactServices/DeleteAllContactService";
 
+import CheckContactNumber from "../services/WbotServices/CheckNumber"
+import CheckIsValidContact from "../services/WbotServices/CheckIsValidContact";
+import GetProfilePicUrl from "../services/WbotServices/GetProfilePicUrl";
 import AppError from "../errors/AppError";
 import GetContactService from "../services/ContactServices/GetContactService";
-import CheckIsValidContact from "../services/WbotServices/CheckIsValidContact";
-import CheckContactNumber from "../services/WbotServices/CheckNumber";
-import GetProfilePicUrl from "../services/WbotServices/GetProfilePicUrl";
 
 type IndexQuery = {
   searchParam: string;
   pageNumber: string;
-  tags?: string;
 };
 
 type IndexGetContactQuery = {
   name: string;
   number: string;
-  address: string;
   email: string;
 };
 
@@ -35,38 +33,27 @@ interface ExtraInfo {
 interface ContactData {
   name: string;
   number: string;
-  address?: string;
   email?: string;
-  messengerId?: string;
-  instagramId?: string;
-  telegramId?: string;
   extraInfo?: ExtraInfo[];
 }
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
-  const { searchParam, pageNumber, tags } = req.query as IndexQuery;
-
-  const tagIds = tags ? tags.split(",").map(tag => Number(tag)) : [];
+  const { searchParam, pageNumber } = req.query as IndexQuery;
 
   const { contacts, count, hasMore } = await ListContactsService({
     searchParam,
-    pageNumber,
-    tags: tagIds
+    pageNumber
   });
 
   return res.json({ contacts, count, hasMore });
 };
 
-export const getContact = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
-  const { name, number, address, email } = req.body as IndexGetContactQuery;
+export const getContact = async (req: Request, res: Response): Promise<Response> => {
+  const { name, number, email } = req.body as IndexGetContactQuery;
 
   const contact = await GetContactService({
     name,
     number,
-    address,
     email
   });
 
@@ -75,7 +62,13 @@ export const getContact = async (
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const newContact: ContactData = req.body;
-  newContact.number = newContact.number.replace("-", "").replace(" ", "");
+  newContact.number = newContact.number.replace("-", "")
+    .replace(" ", "")
+    .replace("(", "")
+    .replace(")", "")
+    .replace("+", "")
+    .replace(".", "")
+    .replace("_", "");;
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
@@ -91,20 +84,18 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   }
 
   await CheckIsValidContact(newContact.number);
-  const validNumber: any = await CheckContactNumber(newContact.number);
+  const validNumber: any = await CheckContactNumber(newContact.number)
 
   const profilePicUrl = await GetProfilePicUrl(validNumber);
 
-  let { name } = newContact;
-  let number = validNumber;
-  let { address } = newContact;
-  let { email } = newContact;
-  let { extraInfo } = newContact;
+  let name = newContact.name
+  let number = validNumber
+  let email = newContact.email
+  let extraInfo = newContact.extraInfo
 
   const contact = await CreateContactService({
     name,
     number,
-    address,
     email,
     extraInfo,
     profilePicUrl
@@ -132,7 +123,11 @@ export const update = async (
   const contactData: ContactData = req.body;
 
   const schema = Yup.object().shape({
-    name: Yup.string()
+    name: Yup.string(),
+    number: Yup.string().matches(
+      /^\d+$/,
+      "Invalid number format. Only numbers is allowed."
+    )
   });
 
   try {
@@ -141,13 +136,7 @@ export const update = async (
     throw new AppError(err.message);
   }
 
-  if (
-    !contactData.messengerId &&
-    !contactData.instagramId &&
-    !contactData.telegramId
-  ) {
-    await CheckIsValidContact(contactData.number);
-  }
+  await CheckIsValidContact(contactData.number);
 
   const { contactId } = req.params;
 
@@ -183,6 +172,8 @@ export const removeAll = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
+  const { contactId } = req.params;
+
   await DeleteAllContactService();
 
   return res.send();

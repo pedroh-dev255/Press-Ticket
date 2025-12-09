@@ -1,6 +1,7 @@
 import AppError from "../../errors/AppError";
 import CheckContactOpenTickets from "../../helpers/CheckContactOpenTickets";
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
+import { Op } from "sequelize";
 import Ticket from "../../models/Ticket";
 import User from "../../models/User";
 import ShowContactService from "../ContactServices/ShowContactService";
@@ -19,6 +20,24 @@ const CreateTicketService = async ({
   queueId
 }: Request): Promise<Ticket> => {
   const defaultWhatsapp = await GetDefaultWhatsApp(userId);
+
+  console.log("DEBUG - Chamada a função");
+
+  // Verifica se já existe ticket aberto para o contato e WhatsApp
+  const existingTicket = await Ticket.findOne({
+    where: {
+      contactId,
+      whatsappId: defaultWhatsapp.id,
+      status: { [Op.not]: "closed" }
+    }
+  });
+
+  if (existingTicket) {
+    console.log("DEBUG - Já existe um ticket aberto para o contato");
+    return existingTicket;
+  }
+
+  console.log("DEBUG - Criando novo ticket");
 
   await CheckContactOpenTickets(contactId, defaultWhatsapp.id);
 

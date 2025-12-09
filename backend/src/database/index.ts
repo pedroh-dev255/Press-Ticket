@@ -1,26 +1,22 @@
 import { Sequelize } from "sequelize-typescript";
-import ApiToken from "../models/ApiToken";
+import User from "../models/User";
+import Setting from "../models/Setting";
 import Contact from "../models/Contact";
+import Ticket from "../models/Ticket";
+import Whatsapp from "../models/Whatsapp";
 import ContactCustomField from "../models/ContactCustomField";
+import Message from "../models/Message";
+import Queue from "../models/Queue";
+import WhatsappQueue from "../models/WhatsappQueue";
+import UserQueue from "../models/UserQueue";
+import QuickAnswer from "../models/QuickAnswer";
+import Tag from "../models/Tag";
 import ContactTag from "../models/ContactTag";
 import Integration from "../models/Integration";
-import Message from "../models/Message";
-import OldMessage from "../models/OldMessage";
-import Personalization from "../models/Personalization";
-import Queue from "../models/Queue";
-import QuickAnswer from "../models/QuickAnswer";
-import Setting from "../models/Setting";
-import Tag from "../models/Tag";
-import Ticket from "../models/Ticket";
-import User from "../models/User";
-import UserQueue from "../models/UserQueue";
-import UserSession from "../models/UserSession";
-import UserWhatsapp from "../models/UserWhatsapp";
-import Whatsapp from "../models/Whatsapp";
-import WhatsappQueue from "../models/WhatsappQueue";
 
 // eslint-disable-next-line
 const dbConfig = require("../config/database");
+// import dbConfig from "../config/database";
 
 const sequelize = new Sequelize(dbConfig);
 
@@ -35,15 +31,10 @@ const models = [
   Queue,
   WhatsappQueue,
   UserQueue,
-  UserWhatsapp,
   QuickAnswer,
   Tag,
   ContactTag,
-  Integration,
-  OldMessage,
-  Personalization,
-  UserSession,
-  ApiToken
+  Integration
 ];
 
 sequelize.addModels(models);

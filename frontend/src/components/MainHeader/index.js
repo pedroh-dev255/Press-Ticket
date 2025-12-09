@@ -1,18 +1,19 @@
-import { makeStyles } from "@material-ui/core/styles";
 import React from "react";
 
-const useStyles = makeStyles((theme) => ({
-	headerContainer: {
+import { makeStyles } from "@material-ui/core/styles";
+
+const useStyles = makeStyles(theme => ({
+	contactsHeader: {
 		display: "flex",
 		alignItems: "center",
-		padding: theme.spacing(0, 1, 1, 1),
+		padding: "0px 6px 6px 6px",
 	},
 }));
 
 const MainHeader = ({ children }) => {
 	const classes = useStyles();
 
-	return <div className={classes.headerContainer}>{children}</div>;
+	return <div className={classes.contactsHeader}>{children}</div>;
 };
 
 export default MainHeader;

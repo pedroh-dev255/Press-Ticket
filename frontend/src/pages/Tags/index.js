@@ -1,3 +1,8 @@
+import React, { useState, useEffect, useReducer, useCallback } from "react";
+import { toast } from "react-toastify";
+import openSocket from "socket.io-client";
+
+import { makeStyles } from "@material-ui/core/styles";
 import {
   Button,
   IconButton,
@@ -11,7 +16,7 @@ import {
   TextField,
   Tooltip
 } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core/styles";
+
 import {
   AddCircleOutline,
   DeleteForever,
@@ -19,19 +24,18 @@ import {
   Edit,
   Search
 } from "@material-ui/icons";
-import React, { useCallback, useEffect, useReducer, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { toast } from "react-toastify";
-import ConfirmationModal from "../../components/ConfirmationModal";
+
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";
 import MainHeaderButtonsWrapper from "../../components/MainHeaderButtonsWrapper";
+import Title from "../../components/Title";
+
+import api from "../../services/api";
+import { i18n } from "../../translate/i18n";
 import TableRowSkeleton from "../../components/TableRowSkeleton";
 import TagModal from "../../components/TagModal";
-import Title from "../../components/Title";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import toastError from "../../errors/toastError";
-import api from "../../services/api";
-import openSocket from "../../services/socket-io";
 
 const reducer = (state, action) => {
   if (action.type === "LOAD_TAGS") {
@@ -94,7 +98,7 @@ const useStyles = makeStyles((theme) => ({
 
 const Tags = () => {
   const classes = useStyles();
-  const { t } = useTranslation();
+
   const [loading, setLoading] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -133,7 +137,7 @@ const Tags = () => {
   }, [searchParam, pageNumber, fetchTags]);
 
   useEffect(() => {
-    const socket = openSocket();
+    const socket = openSocket(process.env.REACT_APP_BACKEND_URL);
 
     socket.on("tags", (data) => {
       if (data.action === "update" || data.action === "create") {
@@ -172,7 +176,7 @@ const Tags = () => {
   const handleDeleteTag = async (tagId) => {
     try {
       await api.delete(`/tags/${tagId}`);
-      toast.success(t("tags.toasts.deleted"));
+      toast.success(i18n.t("tags.toasts.deleted"));
     } catch (err) {
       toastError(err);
     }
@@ -188,7 +192,7 @@ const Tags = () => {
   const handleDeleteAllTags = async () => {
     try {
       await api.delete(`/tags`);
-      toast.success(t("tags.toasts.deletedAll"));
+      toast.success(i18n.t("tags.toasts.deletedAll"));
     } catch (err) {
       toastError(err);
     }
@@ -217,19 +221,19 @@ const Tags = () => {
     <MainContainer>
       <ConfirmationModal
         title={
-          deletingTag ? `${t("tags.confirmationModal.deleteTitle")}`
-            : `${t("tags.confirmationModal.deleteAllTitle")}`
+          deletingTag ? `${i18n.t("tags.confirmationModal.deleteTitle")}`
+          : `${i18n.t("tags.confirmationModal.deleteAllTitle")}`
         }
         open={confirmModalOpen}
         onClose={setConfirmModalOpen}
-        onConfirm={() =>
+        onConfirm={() => 
           deletingTag ? handleDeleteTag(deletingTag.id)
-            : handleDeleteAllTags(deletingAllTags)
+         : handleDeleteAllTags(deletingAllTags)
         }
       >
         {
-          deletingTag ? `${t("tags.confirmationModal.deleteMessage")}`
-            : `${t("tags.confirmationModal.deleteAllMessage")}`
+          deletingTag ? `${i18n.t("tags.confirmationModal.deleteMessage")}`
+            : `${i18n.t("tags.confirmationModal.deleteAllMessage")}`
         }
       </ConfirmationModal>
       <TagModal
@@ -240,10 +244,10 @@ const Tags = () => {
         tagId={selectedTag && selectedTag.id}
       />
       <MainHeader>
-        <Title >{t("tags.title")} ({tags.length})</Title>
+        <Title >{i18n.t("tags.title")} ({tags.length})</Title>
         <MainHeaderButtonsWrapper>
           <TextField
-            placeholder={t("contacts.searchPlaceholder")}
+            placeholder={i18n.t("contacts.searchPlaceholder")}
             type="search"
             value={searchParam}
             onChange={handleSearch}
@@ -255,7 +259,7 @@ const Tags = () => {
               ),
             }}
           />
-          <Tooltip title={t("tags.buttons.add")}>
+          <Tooltip title={i18n.t("tags.buttons.add")}>
             <Button
               variant="contained"
               color="primary"
@@ -264,7 +268,7 @@ const Tags = () => {
               <AddCircleOutline />
             </Button>
           </Tooltip>
-          <Tooltip title={t("tags.buttons.deleteAll")}>
+          <Tooltip title={i18n.t("tags.buttons.deleteAll")}>
             <Button
               variant="contained"
               color="primary"
@@ -286,10 +290,10 @@ const Tags = () => {
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell align="center">{t("tags.table.name")}</TableCell>
-              <TableCell align="center">{t("tags.table.color")}</TableCell>
-              <TableCell align="center">{t("tags.table.contacts")}</TableCell>
-              <TableCell align="center">{t("tags.table.actions")}</TableCell>
+              <TableCell align="center">{i18n.t("tags.table.name")}</TableCell>
+              <TableCell align="center">{i18n.t("tags.table.color")}</TableCell>
+              <TableCell align="center">{i18n.t("tags.table.contacts")}</TableCell>
+              <TableCell align="center">{i18n.t("tags.table.actions")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -318,7 +322,7 @@ const Tags = () => {
                       size="small"
                       onClick={() => handleEditTag(tag)}
                     >
-                      <Edit color="secondary" />
+                      <Edit color="secondary"/>
                     </IconButton>
 
                     <IconButton
@@ -328,7 +332,7 @@ const Tags = () => {
                         setDeletingTag(tag);
                       }}
                     >
-                      <DeleteOutline color="secondary" />
+                      <DeleteOutline color="secondary"/>
                     </IconButton>
                   </TableCell>
                 </TableRow>

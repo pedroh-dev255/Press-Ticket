@@ -7,30 +7,23 @@ interface SerializedUser {
   name: string;
   email: string;
   profile: string;
-  online: boolean;
-  isTricked: boolean;
+  queues: Queue[];
+  whatsapp: Whatsapp;
   startWork: string;
   endWork: string;
-  createdAt: Date;
-  whatsapps: Whatsapp[];
-  queues: Queue[];
-  active: boolean;
+  isTricked: string;
 }
 
-export const SerializeUser = async (user: User): Promise<SerializedUser> => {
-
+export const SerializeUser = (user: User): SerializedUser => {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     profile: user.profile,
-    online: user.online,
-    isTricked: user.isTricked,
+    queues: user.queues,
+    whatsapp: user.whatsapp,
     startWork: user.startWork,
     endWork: user.endWork,
-    createdAt: user.createdAt,
-    whatsapps: user.whatsapps,
-    queues: user.queues,
-    active: user.active,
+    isTricked: user.isTricked
   };
 };

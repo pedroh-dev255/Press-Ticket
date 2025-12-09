@@ -1,16 +1,17 @@
-import { IconButton } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core/styles";
-import { MoreVert, Replay } from "@material-ui/icons";
 import React, { useContext, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router-dom";
-import { AuthContext } from "../../context/Auth/AuthContext";
-import toastError from "../../errors/toastError";
+
+import { makeStyles } from "@material-ui/core/styles";
+import { IconButton } from "@material-ui/core";
+import { MoreVert, Replay } from "@material-ui/icons";
+
+import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
-import ButtonWithSpinner from "../ButtonWithSpinner";
-import { Can } from "../Can";
 import TicketOptionsMenu from "../TicketOptionsMenu";
-import ConfirmationModal from "../ConfirmationModal";
+import ButtonWithSpinner from "../ButtonWithSpinner";
+import toastError from "../../errors/toastError";
+import { AuthContext } from "../../context/Auth/AuthContext";
+import { Can } from "../Can";
 
 const useStyles = makeStyles(theme => ({
 	actionButtons: {
@@ -26,15 +27,18 @@ const useStyles = makeStyles(theme => ({
 
 const TicketActionButtons = ({ ticket }) => {
 	const classes = useStyles();
-	const { t } = useTranslation();
 	const history = useHistory();
 	const [anchorEl, setAnchorEl] = useState(null);
 	const [loading, setLoading] = useState(false);
-	const [confirmationOpen, setConfirmationOpen] = useState(false);
 	const ticketOptionsMenuOpen = Boolean(anchorEl);
 	const { user } = useContext(AuthContext);
+        const isAdmin = user?.profile === "admin";
+  	const isTicketOwner = user?.id === ticket.userId;
+
+	const canWrite = isAdmin || isTicketOwner;
 
 	const handleOpenTicketOptionsMenu = e => {
+                if(!canWrite) return toastError("Sem permissão");
 		setAnchorEl(e.currentTarget);
 	};
 
@@ -43,20 +47,14 @@ const TicketActionButtons = ({ ticket }) => {
 	};
 
 	const handleUpdateTicketStatus = async (e, status, userId) => {
+                if(!canWrite) return toastError("Sem permissão");
 		setLoading(true);
 		try {
-			if (status === "closed") {
-				await api.put(`/tickets/${ticket.id}`, {
-					status: status,
-					userId: userId || null,
-					queueId: null,
-				});
-			} else {
-				await api.put(`/tickets/${ticket.id}`, {
-					status: status,
-					userId: userId || null,
-				});
-			}
+			await api.put(`/tickets/${ticket.id}`, {
+				status: status,
+				userId: userId || null,
+			});
+
 			setLoading(false);
 			if (status === "open") {
 				history.push(`/tickets/${ticket.id}`);
@@ -69,14 +67,6 @@ const TicketActionButtons = ({ ticket }) => {
 		}
 	};
 
-	const handleCloseTicket = () => {
-		setConfirmationOpen(true);
-	};
-
-	const handleConfirmClose = () => {
-		handleUpdateTicketStatus(null, "closed", user?.id);
-	};
-
 	return (
 		<div className={classes.actionButtons}>
 			{ticket.status === "closed" && (
@@ -86,7 +76,7 @@ const TicketActionButtons = ({ ticket }) => {
 					size="small"
 					onClick={e => handleUpdateTicketStatus(e, "open", user?.id)}
 				>
-					{t("messagesList.header.buttons.reopen")}
+					{i18n.t("messagesList.header.buttons.reopen")}
 				</ButtonWithSpinner>
 			)}
 			{ticket.status === "open" && (
@@ -97,25 +87,17 @@ const TicketActionButtons = ({ ticket }) => {
 						size="small"
 						onClick={e => handleUpdateTicketStatus(e, "pending", null)}
 					>
-						{t("messagesList.header.buttons.return")}
+						{i18n.t("messagesList.header.buttons.return")}
 					</ButtonWithSpinner>
 					<ButtonWithSpinner
 						loading={loading}
 						size="small"
 						variant="contained"
 						color="primary"
-						onClick={handleCloseTicket}
+						onClick={e => handleUpdateTicketStatus(e, "closed", user?.id)}
 					>
-						{t("messagesList.header.buttons.resolve")}
+						{i18n.t("messagesList.header.buttons.resolve")}
 					</ButtonWithSpinner>
-					<ConfirmationModal
-						title={t("tickets.confirmationModal.closeTicket.title")}
-						open={confirmationOpen}
-						onClose={() => setConfirmationOpen(false)}
-						onConfirm={handleConfirmClose}
-					>
-						{t("tickets.confirmationModal.closeTicket.message")}
-					</ConfirmationModal>
 					<IconButton
 						color="primary"
 						onClick={handleOpenTicketOptionsMenu}>
@@ -142,7 +124,7 @@ const TicketActionButtons = ({ ticket }) => {
 								color="primary"
 								onClick={e => handleUpdateTicketStatus(e, "open", user?.id)}
 							>
-								{t("messagesList.header.buttons.accept")}
+								{i18n.t("messagesList.header.buttons.accept")}
 							</ButtonWithSpinner>
 						)}
 					</>

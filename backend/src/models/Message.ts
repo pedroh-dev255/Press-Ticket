@@ -1,18 +1,16 @@
 import {
-  BelongsTo,
+  Table,
   Column,
   CreatedAt,
-  DataType,
-  Default,
-  ForeignKey,
-  HasMany,
+  UpdatedAt,
   Model,
+  DataType,
   PrimaryKey,
-  Table,
-  UpdatedAt
+  Default,
+  BelongsTo,
+  ForeignKey
 } from "sequelize-typescript";
 import Contact from "./Contact";
-import OldMessage from "./OldMessage";
 import Ticket from "./Ticket";
 
 @Table
@@ -49,16 +47,9 @@ class Message extends Model<Message> {
   @Column
   mediaType: string;
 
-  @Column
-  userId: number;
-
   @Default(false)
   @Column
   isDeleted: boolean;
-
-  @Default(false)
-  @Column
-  isEdited: boolean;
 
   @CreatedAt
   @Column(DataType.DATE(6))
@@ -81,9 +72,6 @@ class Message extends Model<Message> {
 
   @BelongsTo(() => Ticket)
   ticket: Ticket;
-
-  @HasMany(() => OldMessage)
-  oldMessages: OldMessage[];
 
   @ForeignKey(() => Contact)
   @Column

@@ -24,6 +24,18 @@ module.exports = {
           updatedAt: new Date()
         },
         {
+          key: "transferTicket",
+          value: "disabled",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          key: "messageAccept",
+          value: "disabled",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
           key: "sideMenu",
           value: "disabled",
           createdAt: new Date(),
@@ -36,13 +48,13 @@ module.exports = {
           updatedAt: new Date()
         },
         {
-          key: "dispMessagesPerDay",
-          value: "10",
+          key: "closeTicketApi",
+          value: "disabled",
           createdAt: new Date(),
           updatedAt: new Date()
         },
         {
-          key: "closeTicketApi",
+          key: "darkMode",
           value: "disabled",
           createdAt: new Date(),
           updatedAt: new Date()

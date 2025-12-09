@@ -6,19 +6,19 @@ import SetTicketMessagesAsRead from "../helpers/SetTicketMessagesAsRead";
 import Message from "../models/Message";
 import Whatsapp from "../models/Whatsapp";
 import CreateOrUpdateContactService from "../services/ContactServices/CreateOrUpdateContactService";
-import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
 import FindOrCreateTicketService from "../services/TicketServices/FindOrCreateTicketService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
-import UpdateTicketService from "../services/TicketServices/UpdateTicketService";
 import CheckIsValidContact from "../services/WbotServices/CheckIsValidContact";
 import CheckContactNumber from "../services/WbotServices/CheckNumber";
 import GetProfilePicUrl from "../services/WbotServices/GetProfilePicUrl";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
+import UpdateTicketService from "../services/TicketServices/UpdateTicketService";
+import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
 
 type WhatsappData = {
   whatsappId: number;
-};
+}
 
 type MessageData = {
   body: string;
@@ -33,9 +33,7 @@ interface ContactData {
 
 const createContact = async (
   whatsappId: number | undefined,
-  newContact: string,
-  userId?: number,
-  queueId?: number
+  newContact: string
 ) => {
   await CheckIsValidContact(newContact);
 
@@ -69,80 +67,54 @@ const createContact = async (
   const createTicket = await FindOrCreateTicketService(
     contact,
     whatsapp.id,
-    1,
-    userId,
-    queueId
+    1
   );
 
   const ticket = await ShowTicketService(createTicket.id);
 
-  if (ticket.status === "open") {
-    await SetTicketMessagesAsRead(ticket);
-  }
+  SetTicketMessagesAsRead(ticket);
 
   return ticket;
 };
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
-  const {
-    whatsappId,
-    body,
-    quotedMsg,
-    userId,
-    queueId
-  }: MessageData & WhatsappData & { userId: number; queueId: number } =
-    req.body;
-  const medias = req.files as Express.Multer.File[];
   const newContact: ContactData = req.body;
+  const { whatsappId }: WhatsappData = req.body;
+  const { body, quotedMsg }: MessageData = req.body;
+  const medias = req.files as Express.Multer.File[];
 
-  const formattedNumber = newContact.number.replace("-", "").replace(" ", "");
+  newContact.number = newContact.number.replace("-", "").replace(" ", "");
 
   const schema = Yup.object().shape({
     number: Yup.string()
       .required()
-      .matches(/^\d+$/, "Invalid number format. Only numbers are allowed."),
-    userId: Yup.number().required("User ID is required")
+      .matches(/^\d+$/, "Invalid number format. Only numbers is allowed.")
   });
 
   try {
-    await schema.validate({ number: formattedNumber, userId });
+    await schema.validate(newContact);
   } catch (err: any) {
     throw new AppError(err.message);
   }
 
-  const contactAndTicket = await createContact(
-    whatsappId,
-    formattedNumber,
-    userId,
-    queueId
-  );
+  const contactAndTicket = await createContact(whatsappId, newContact.number);
 
   let resp: any;
 
   if (medias) {
     await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
-        resp = await SendWhatsAppMedia({
-          body,
-          media,
-          ticket: contactAndTicket
-        });
+        resp = await SendWhatsAppMedia({ body, media, ticket: contactAndTicket });
       })
     );
   } else {
-    resp = await SendWhatsAppMessage({
-      body,
-      ticket: contactAndTicket,
-      quotedMsg
-    });
+    resp = await SendWhatsAppMessage({ body, ticket: contactAndTicket, quotedMsg });
   }
 
-  const listSettingsService = await ListSettingsServiceOne({
-    key: "closeTicketApi"
-  });
-  const closeTicketApi = listSettingsService?.value;
+  const listSettingsService = await ListSettingsServiceOne({ key: "closeTicketApi" });
+  var closeTicketApi = listSettingsService?.value;
 
-  if (closeTicketApi === "enabled") {
+  if (closeTicketApi === 'enabled') {
     setTimeout(async () => {
       await UpdateTicketService({
         ticketId: contactAndTicket.id,
@@ -150,102 +122,5 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
       });
     }, 1000);
   }
-
-  return res.send({ resp });
-};
-
-export const sendMessage = async (req: Request, res: Response): Promise<Response> => {
-  const { body, quotedMsg, userId, queueId, whatsappId }: MessageData & WhatsappData & { userId: number; queueId: number } =
-    req.body;
-
-  const newContact: ContactData = req.body;
-  const formattedNumber = newContact.number.replace("-", "").replace(" ", "");
-
-  const schema = Yup.object().shape({
-    number: Yup.string()
-      .required()
-      .matches(/^\d+$/, "Invalid number format. Only numbers are allowed."),
-    userId: Yup.number().required("User ID is required")
-  });
-
-  try {
-    await schema.validate({ number: formattedNumber, userId });
-  } catch (err: any) {
-    throw new AppError(err.message);
-  }
-
-  const contactAndTicket = await createContact(whatsappId, formattedNumber, userId, queueId);
-
-  const resp = await SendWhatsAppMessage({
-    body,
-    ticket: contactAndTicket,
-    quotedMsg
-  });
-
-  const listSettingsService = await ListSettingsServiceOne({
-    key: "closeTicketApi"
-  });
-  const closeTicketApi = listSettingsService?.value;
-
-  if (closeTicketApi === "enabled") {
-    setTimeout(async () => {
-      await UpdateTicketService({
-        ticketId: contactAndTicket.id,
-        ticketData: { status: "closed" }
-      });
-    }, 1000);
-  }
-
-  return res.send({ resp });
-};
-
-export const sendMedia = async (req: Request, res: Response): Promise<Response> => {
-  const { body, quotedMsg, userId, queueId, whatsappId }: MessageData & WhatsappData & { userId: number; queueId: number } =
-    req.body;
-
-  const medias = req.files as Express.Multer.File[];
-  const newContact: ContactData = req.body;
-  const formattedNumber = newContact.number.replace("-", "").replace(" ", "");
-
-  const schema = Yup.object().shape({
-    number: Yup.string()
-      .required()
-      .matches(/^\d+$/, "Invalid number format. Only numbers are allowed."),
-    userId: Yup.number().required("User ID is required")
-  });
-
-  try {
-    await schema.validate({ number: formattedNumber, userId });
-  } catch (err: any) {
-    throw new AppError(err.message);
-  }
-
-  const contactAndTicket = await createContact(whatsappId, formattedNumber, userId, queueId);
-
-  let resp: any;
-  await Promise.all(
-    medias.map(async (media: Express.Multer.File) => {
-      resp = await SendWhatsAppMedia({
-        body,
-        media,
-        ticket: contactAndTicket
-      });
-    })
-  );
-
-  const listSettingsService = await ListSettingsServiceOne({
-    key: "closeTicketApi"
-  });
-  const closeTicketApi = listSettingsService?.value;
-
-  if (closeTicketApi === "enabled") {
-    setTimeout(async () => {
-      await UpdateTicketService({
-        ticketId: contactAndTicket.id,
-        ticketData: { status: "closed" }
-      });
-    }, 1000);
-  }
-
-  return res.send({ resp });
+  return res.send({ error: resp });
 };

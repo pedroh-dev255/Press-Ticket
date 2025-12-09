@@ -1,17 +1,17 @@
 import {
-  AllowNull,
-  AutoIncrement,
-  BelongsToMany,
+  Table,
   Column,
   CreatedAt,
-  DataType,
-  Default,
-  HasMany,
+  UpdatedAt,
   Model,
+  DataType,
   PrimaryKey,
-  Table,
+  AutoIncrement,
+  Default,
+  AllowNull,
+  HasMany,
   Unique,
-  UpdatedAt
+  BelongsToMany
 } from "sequelize-typescript";
 import Queue from "./Queue";
 import Ticket from "./Ticket";
@@ -56,9 +56,6 @@ class Whatsapp extends Model<Whatsapp> {
   @Column(DataType.TEXT)
   farewellMessage: string;
 
-  @Column
-  type: string;
-
   @Default(false)
   @AllowNull
   @Column
@@ -68,13 +65,6 @@ class Whatsapp extends Model<Whatsapp> {
   @AllowNull
   @Column
   isDisplay: boolean;
-
-  @AllowNull
-  @Column({
-    type: DataType.STRING,
-    defaultValue: "#5C59A0"
-  })
-  color: string;
 
   @CreatedAt
   createdAt: Date;

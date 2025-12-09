@@ -1,14 +1,19 @@
-import { v4 as uuidv4 } from "uuid";
+import User from "../../models/User";
 import AppError from "../../errors/AppError";
 import {
   createAccessToken,
   createRefreshToken
 } from "../../helpers/CreateTokens";
 import { SerializeUser } from "../../helpers/SerializeUser";
-import { getIO } from "../../libs/socket";
 import Queue from "../../models/Queue";
-import User from "../../models/User";
-import UserSession from "../../models/UserSession";
+
+interface SerializedUser {
+  id: number;
+  name: string;
+  email: string;
+  profile: string;
+  queues: Queue[];
+}
 
 interface Request {
   email: string;
@@ -16,19 +21,7 @@ interface Request {
 }
 
 interface Response {
-  serializedUser: {
-    id: number;
-    name: string;
-    email: string;
-    profile: string;
-    online: boolean;
-    isTricked: boolean;
-    startWork: string;
-    endWork: string;
-    createdAt: Date;
-    queues: Queue[];
-    active: boolean;
-  };
+  serializedUser: SerializedUser;
   token: string;
   refreshToken: string;
 }
@@ -44,10 +37,6 @@ const AuthUserService = async ({
 
   if (!user) {
     throw new AppError("ERR_INVALID_CREDENTIALS", 401);
-  }
-
-  if (!user.active) {
-    throw new AppError("ERR_USER_INACTIVE", 401);
   }
 
   const Hr = new Date();
@@ -74,67 +63,10 @@ const AuthUserService = async ({
     throw new AppError("ERR_INVALID_CREDENTIALS", 401);
   }
 
-  await user.update({ online: true });
-
-  const io = getIO();
-  io.emit("userSessionUpdate", {
-    userId: user.id,
-    online: true
-  });
-
-  const lastSession = await UserSession.findOne({
-    where: {
-      userId: user.id,
-      logoutAt: null
-    }
-  });
-
-  if (lastSession) {
-    const lastActivity = new Date(lastSession.lastActivity).getTime();
-    const currentTime = new Date().getTime();
-    const diffHours = (currentTime - lastActivity) / (1000 * 60 * 60);
-
-    if (diffHours >= 8) {
-      await lastSession.update({
-        logoutAt: new Date()
-      });
-
-      await user.update({
-        online: false,
-        currentSessionId: null
-      });
-
-      io.emit("userSessionExpired", {
-        userId: user.id,
-        expired: true,
-        message: "ERR_SESSION_EXPIRED"
-      });
-
-      throw new AppError("ERR_SESSION_EXPIRED", 401);
-    }
-
-    await lastSession.update({
-      lastActivity: new Date()
-    });
-  } else {
-    const newSessionId = uuidv4();
-
-    await UserSession.create({
-      userId: user.id,
-      sessionId: newSessionId,
-      loginAt: new Date(),
-      lastActivity: new Date()
-    });
-
-    await user.update({
-      online: true,
-      currentSessionId: newSessionId
-    });
-  }
-
   const token = createAccessToken(user);
   const refreshToken = createRefreshToken(user);
-  const serializedUser = await SerializeUser(user);
+
+  const serializedUser = SerializeUser(user);
 
   return {
     serializedUser,

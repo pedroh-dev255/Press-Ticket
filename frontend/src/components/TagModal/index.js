@@ -1,3 +1,13 @@
+import React, { useState, useEffect, useContext } from "react";
+
+import * as Yup from "yup";
+import {
+    Formik,
+    Form,
+    Field
+} from "formik";
+import { toast } from "react-toastify";
+
 import {
     Button,
     CircularProgress,
@@ -10,21 +20,16 @@ import {
     makeStyles,
     TextField
 } from "@material-ui/core";
-import { green } from "@material-ui/core/colors";
+
 import { Colorize } from "@material-ui/icons";
-import {
-    Field,
-    Form,
-    Formik
-} from "formik";
 import { ColorBox } from 'material-ui-color';
-import React, { useContext, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { toast } from "react-toastify";
-import * as Yup from "yup";
-import { AuthContext } from "../../context/Auth/AuthContext";
-import toastError from "../../errors/toastError";
+import { green } from "@material-ui/core/colors";
+
+import { i18n } from "../../translate/i18n";
+
 import api from "../../services/api";
+import toastError from "../../errors/toastError";
+import { AuthContext } from "../../context/Auth/AuthContext";
 
 const useStyles = makeStyles(theme => ({
     root: {
@@ -37,9 +42,11 @@ const useStyles = makeStyles(theme => ({
             marginRight: theme.spacing(1),
         },
     },
+
     btnWrapper: {
         position: "relative",
     },
+
     buttonProgress: {
         color: green[500],
         position: "absolute",
@@ -66,13 +73,14 @@ const TagSchema = Yup.object().shape({
 
 const TagModal = ({ open, onClose, tagId, reload }) => {
     const classes = useStyles();
-    const { t } = useTranslation();
     const { user } = useContext(AuthContext);
     const [colorPickerModalOpen, setColorPickerModalOpen] = useState(false);
+
     const initialState = {
         name: "",
         color: ""
     };
+
     const [tag, setTag] = useState(initialState);
 
     useEffect(() => {
@@ -104,7 +112,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
             } else {
                 await api.post("/tags", tagData);
             }
-            toast.success(t("tagModal.success"));
+            toast.success(i18n.t("tagModal.success"));
             if (typeof reload == 'function') {
                 reload();
             }
@@ -124,7 +132,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                 scroll="paper"
             >
                 <DialogTitle id="form-dialog-title">
-                    {(tagId ? `${t("tagModal.title.edit")}` : `${t("tagModal.title.add")}`)}
+                    {(tagId ? `${i18n.t("tagModal.title.edit")}` : `${i18n.t("tagModal.title.add")}`)}
                 </DialogTitle>
                 <Formik
                     initialValues={tag}
@@ -143,7 +151,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                 <div className={classes.multFieldLine}>
                                     <Field
                                         as={TextField}
-                                        label={t("tagModal.form.name")}
+                                        label={i18n.t("tagModal.form.name")}
                                         name="name"
                                         error={touched.name && Boolean(errors.name)}
                                         helperText={touched.name && errors.name}
@@ -158,7 +166,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                     <Field
                                         as={TextField}
                                         fullWidth
-                                        label={t("tagModal.form.color")}
+                                        label={i18n.t("tagModal.form.color")}
                                         name="color"
                                         id="color"
                                         error={touched.color && Boolean(errors.color)}
@@ -186,6 +194,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                         margin="dense"
                                     />
                                 </div>
+
                                 {colorPickerModalOpen && (
                                     <div>
                                         <ColorBox
@@ -207,7 +216,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                     disabled={isSubmitting}
                                     variant="outlined"
                                 >
-                                    {t("tagModal.buttons.cancel")}
+                                    {i18n.t("tagModal.buttons.cancel")}
                                 </Button>
                                 <Button
                                     type="submit"
@@ -217,8 +226,8 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                     className={classes.btnWrapper}
                                 >
                                     {tagId
-                                        ? `${t("tagModal.buttons.okEdit")}`
-                                        : `${t("tagModal.buttons.okAdd")}`}
+                                        ? `${i18n.t("tagModal.buttons.okEdit")}`
+                                        : `${i18n.t("tagModal.buttons.okAdd")}`}
                                     {isSubmitting && (
                                         <CircularProgress
                                             size={24}

@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
 import { getIO } from "../libs/socket";
 
-import AppError from "../errors/AppError";
 import CheckSettingsHelper from "../helpers/CheckSettings";
+import AppError from "../errors/AppError";
 
 import CreateUserService from "../services/UserServices/CreateUserService";
-import DeleteUserService from "../services/UserServices/DeleteUserService";
 import ListUsersService from "../services/UserServices/ListUsersService";
-import ShowUserService from "../services/UserServices/ShowUserService";
 import UpdateUserService from "../services/UserServices/UpdateUserService";
+import ShowUserService from "../services/UserServices/ShowUserService";
+import DeleteUserService from "../services/UserServices/DeleteUserService";
 
 type IndexQuery = {
   searchParam: string;
@@ -40,10 +40,9 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     profile,
     isTricked,
     queueIds,
-    whatsappIds,
+    whatsappId,
     startWork,
-    endWork,
-    active
+    endWork
   } = req.body;
 
   if (
@@ -62,10 +61,9 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     profile,
     isTricked,
     queueIds,
-    whatsappIds,
+    whatsappId,
     startWork,
-    endWork,
-    active
+    endWork
   });
 
   const io = getIO();
@@ -121,7 +119,7 @@ export const remove = async (
 ): Promise<Response> => {
   const { userId } = req.params;
 
-  if (req.user.profile !== "admin" && req.user.profile !== "masteradmin") {
+  if (req.user.profile !== "admin") {
     throw new AppError("ERR_NO_PERMISSION", 403);
   }
 

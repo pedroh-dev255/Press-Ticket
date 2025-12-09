@@ -1,5 +1,16 @@
+import React, { useState, useEffect, useReducer, useRef } from "react";
+import { 
+  isSameDay,
+  parseISO,
+  format 
+} from "date-fns";
+import openSocket from "../../services/socket-io";
+import clsx from "clsx";
+import { 
+  blue, 
+  red 
+} from "@material-ui/core/colors";
 import {
-  Box,
   Button,
   CircularProgress,
   Divider,
@@ -7,37 +18,24 @@ import {
   makeStyles,
 } from "@material-ui/core";
 import {
-  blue,
-  red
-} from "@material-ui/core/colors";
-import {
   AccessTime,
   Block,
   Done,
   DoneAll,
   ExpandMore,
   GetApp,
-  KeyboardArrowDown
 } from "@material-ui/icons";
-import clsx from "clsx";
-import {
-  format,
-  isSameDay,
-  parseISO
-} from "date-fns";
-import React, { useEffect, useReducer, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { toast } from "react-toastify";
-import toastError from "../../errors/toastError";
-import api from "../../services/api";
-import openSocket from "../../services/socket-io";
-import Audio from "../Audio";
-import LocationPreview from "../LocationPreview";
-import WhatsMarked from "react-whatsmarked";
-import MessageOptionsMenu from "../MessageOptionsMenu";
-import ModalImageCors from "../ModalImageCors";
-import MultiVcardPreview from "../MultiVcardPreview";
+
+import MarkdownWrapper from "../MarkdownWrapper";
 import VcardPreview from "../VcardPreview";
+import LocationPreview from "../LocationPreview";
+import ModalImageCors from "../ModalImageCors";
+import MessageOptionsMenu from "../MessageOptionsMenu";
+import Audio from "../Audio";
+
+import api from "../../services/api";
+import toastError from "../../errors/toastError";
+import { toast } from "react-toastify";
 
 const useStyles = makeStyles((theme) => ({
   messagesListWrapper: {
@@ -47,10 +45,12 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "column",
     flexGrow: 1,
   },
+
   ticketNumber: {
     color: theme.palette.secondary.main,
     padding: 8,
   },
+
   messagesList: {
     backgroundImage: theme.backgroundImage,
     display: "flex",
@@ -63,6 +63,7 @@ const useStyles = makeStyles((theme) => ({
     },
     ...theme.scrollbarStyles,
   },
+
   circleLoading: {
     color: blue[500],
     position: "absolute",
@@ -71,6 +72,7 @@ const useStyles = makeStyles((theme) => ({
     left: "50%",
     marginTop: 12,
   },
+
   messageLeft: {
     marginRight: 20,
     marginTop: 2,
@@ -85,6 +87,7 @@ const useStyles = makeStyles((theme) => ({
       top: 0,
       right: 0,
     },
+
     whiteSpace: "pre-wrap",
     backgroundColor: "#ffffff",
     color: "#303030",
@@ -97,9 +100,9 @@ const useStyles = makeStyles((theme) => ({
     paddingRight: 5,
     paddingTop: 5,
     paddingBottom: 0,
-    boxShadow: theme.mode === "light" ? "0 1px 1px #b3b3b3" : "0 1px 1px #000000",
-    transition: "background-color 0.5s ease-in-out",
+    boxShadow: "0 1px 1px #b3b3b3",
   },
+
   quotedContainerLeft: {
     margin: "-3px -80px 6px -6px",
     overflow: "hidden",
@@ -107,8 +110,8 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: "7.5px",
     display: "flex",
     position: "relative",
-    cursor: "pointer",
   },
+
   quotedMsg: {
     padding: 10,
     maxWidth: 300,
@@ -117,11 +120,13 @@ const useStyles = makeStyles((theme) => ({
     whiteSpace: "pre-wrap",
     overflow: "hidden",
   },
+
   quotedSideColorLeft: {
     flex: "none",
     width: "4px",
     backgroundColor: "#6bcbef",
   },
+
   messageRight: {
     marginLeft: 20,
     marginTop: 2,
@@ -136,6 +141,7 @@ const useStyles = makeStyles((theme) => ({
       top: 0,
       right: 0,
     },
+
     whiteSpace: "pre-wrap",
     backgroundColor: "#dcf8c6",
     color: "#303030",
@@ -148,12 +154,9 @@ const useStyles = makeStyles((theme) => ({
     paddingRight: 5,
     paddingTop: 5,
     paddingBottom: 0,
-    boxShadow: theme.mode === "light" ? "0 1px 1px #b3b3b3" : "0 1px 1px #000000",
-    transition: "background-color 0.5s ease-in-out",
+    boxShadow: "0 1px 1px #b3b3b3",
   },
-  messageHighlighted: {
-    backgroundColor: theme.palette.primary.main,
-  },
+
   quotedContainerRight: {
     margin: "-3px -80px 6px -6px",
     overflowY: "hidden",
@@ -162,17 +165,20 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     position: "relative",
   },
+
   quotedMsgRight: {
     padding: 10,
     maxWidth: 300,
     height: "auto",
     whiteSpace: "pre-wrap",
   },
+
   quotedSideColorRight: {
     flex: "none",
     width: "4px",
     backgroundColor: "#35cd96",
   },
+
   messageActionsButton: {
     display: "none",
     position: "relative",
@@ -182,25 +188,25 @@ const useStyles = makeStyles((theme) => ({
     opacity: "90%",
     "&:hover, &.Mui-focusVisible": { backgroundColor: "inherit" },
   },
+
   messageContactName: {
     display: "flex",
     color: "#6bcbef",
     fontWeight: 500,
   },
+
   textContentItem: {
     overflowWrap: "break-word",
     padding: "3px 80px 6px 6px",
   },
+
   textContentItemDeleted: {
     fontStyle: "italic",
     color: "rgba(0, 0, 0, 0.36)",
     overflowWrap: "break-word",
     padding: "3px 80px 6px 6px",
   },
-  textContentItemEdited: {
-    overflowWrap: "break-word",
-    padding: "3px 120px 6px 6px",
-  },
+
   messageMedia: {
     objectFit: "cover",
     width: 250,
@@ -210,14 +216,7 @@ const useStyles = makeStyles((theme) => ({
     borderBottomLeftRadius: 8,
     borderBottomRightRadius: 8,
   },
-  messageVideo: {
-    width: 250,
-    maxHeight: 445,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-  },
+
   timestamp: {
     fontSize: 11,
     position: "absolute",
@@ -225,6 +224,7 @@ const useStyles = makeStyles((theme) => ({
     right: 5,
     color: "#999",
   },
+
   dailyTimestamp: {
     alignItems: "center",
     textAlign: "center",
@@ -235,32 +235,38 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: "10px",
     boxShadow: "0 1px 1px #b3b3b3",
   },
+
   dailyTimestampText: {
     color: "#808888",
     padding: 8,
     alignSelf: "center",
     marginLeft: "0px",
   },
+
   ackIcons: {
     fontSize: 18,
     verticalAlign: "middle",
     marginLeft: 4,
   },
+
   deletedIcon: {
     fontSize: 18,
     verticalAlign: "middle",
     marginRight: 4,
     color: red[200]
   },
+
   deletedMsg: {
     color: red[200]
   },
+
   ackDoneAllIcon: {
     color: blue[500],
     fontSize: 18,
     verticalAlign: "middle",
     marginLeft: 4,
   },
+
   downloadMedia: {
     display: "flex",
     alignItems: "center",
@@ -268,6 +274,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: "inherit",
     padding: 10,
   },
+
   messageCenter: {
     marginTop: 5,
     alignItems: "center",
@@ -287,17 +294,6 @@ const useStyles = makeStyles((theme) => ({
     paddingTop: 5,
     paddingBottom: 0,
     boxShadow: "0 1px 1px #b3b3b3",
-  },
-  scrollToBottomButton: {
-    position: "absolute",
-    bottom: "20px",
-    right: "20px",
-    zIndex: 1000,
-    backgroundColor: "#fff",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)",
-    "&:hover": {
-      backgroundColor: "#f5f5f5",
-    },
   },
 }));
 
@@ -366,9 +362,8 @@ const MessagesList = ({ ticketId, isGroup }) => {
   const [pageNumber, setPageNumber] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showScrollButton, setShowScrollButton] = useState(false);
   const lastMessageRef = useRef();
-  const { t } = useTranslation();
+
   const [selectedMessage, setSelectedMessage] = useState({});
   const [anchorEl, setAnchorEl] = useState(null);
   const messageOptionsMenuOpen = Boolean(anchorEl);
@@ -438,28 +433,13 @@ const MessagesList = ({ ticketId, isGroup }) => {
 
   const scrollToBottom = () => {
     if (lastMessageRef.current) {
-      lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
+      lastMessageRef.current.scrollIntoView({});
     }
   };
 
-  const unsupportedMediaTypes = [
-    "ciphertext",
-    "list",
-    "template_button_reply",
-    "unknown",
-    "buttons_response",
-    "notification_template",
-    "groups_v4_invite",
-    "poll_creation",
-    "event_creation"
-  ];
-
   const handleScroll = (e) => {
     if (!hasMore) return;
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-
-    const scrollPosition = scrollHeight - scrollTop - clientHeight;
-    setShowScrollButton(scrollPosition > 100);
+    const { scrollTop } = e.currentTarget;
 
     if (scrollTop === 0) {
       document.getElementById("messagesList").scrollTop = 1;
@@ -514,55 +494,31 @@ const MessagesList = ({ ticketId, isGroup }) => {
       }
       return <VcardPreview contact={contact} numbers={obj[0].number} />
     }
-    else if (message.mediaType === "multi_vcard") {
-      if (message.body !== null && message.body !== "") {
-        try {
-          let contacts = message.body;
-
-          if (typeof contacts === 'string') {
-            try {
-              contacts = JSON.parse(contacts);
-            } catch (parseError) {
-              console.error("Erro ao fazer parse do JSON:", parseError);
-              const cleanContacts = contacts.replace(/\\n/g, '').replace(/\\r/g, '').replace(/\\\\/g, '').replace(/\\"/g, '"');
-              try {
-                contacts = JSON.parse(cleanContacts);
-              } catch (cleanParseError) {
-                console.error("Erro ao fazer parse do JSON após limpeza:", cleanParseError);
-                return null;
-              }
+    /*else if (message.mediaType === "multi_vcard") {
+      console.log("multi_vcard")
+      console.log(message)
+    	
+      if(message.body !== null && message.body !== "") {
+        let newBody = JSON.parse(message.body)
+        return (
+          <>
+            {
+            newBody.map(v => (
+              <VcardPreview contact={v.name} numbers={v.number} />
+            ))
             }
-          }
-
-          if (!Array.isArray(contacts)) {
-            console.warn("O corpo da mensagem não é um array, convertendo:", contacts);
-            contacts = [contacts];
-          }
-
-          if (contacts.length > 0) {
-            return (
-              <Box sx={{
-                display: "flex",
-                justifyContent: message.fromMe ? "flex-end" : "flex-start",
-                width: "100%"
-              }}>
-                <MultiVcardPreview contacts={contacts} timestamp={message.createdAt} />
-              </Box>
-            );
-          }
-        } catch (error) {
-          console.error("Erro ao processar mensagem multi_vcard:", error);
-        }
-      }
-    }
+          </>
+        )
+      } else return (<></>)
+    }*/
     else if (message.mediaType === "image") {
-      return <ModalImageCors imageUrl={message.mediaUrl} isDeleted={message.isDeleted} />;
+      return <ModalImageCors imageUrl={message.mediaUrl} />;
     } else if (message.mediaType === "audio") {
       return <Audio url={message.mediaUrl} />
     } else if (message.mediaType === "video") {
       return (
         <video
-          className={classes.messageVideo}
+          className={classes.messageMedia}
           src={message.mediaUrl}
           controls
         />
@@ -578,7 +534,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
               target="_blank"
               href={message.mediaUrl}
             >
-              {t("messagesList.message.download")}
+              Download
             </Button>
           </div>
           <Divider />
@@ -651,7 +607,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
       if (messageTicket !== previousMessageTicket) {
         return (
           <div key={`ticket-${message.id}`} className={classes.ticketNumber}>
-            {t("messagesList.message.ticketNumber")} {messageTicket}
+            #ticket: {messageTicket}
             <hr />
           </div>
         );
@@ -672,82 +628,12 @@ const MessagesList = ({ ticketId, isGroup }) => {
     }
   };
 
-  const scrollToMessage = async (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      element.classList.add(classes.messageHighlighted);
-      setTimeout(() => {
-        element.classList.remove(classes.messageHighlighted);
-      }, 2000);
-      checkScroll();
-    } else {
-      try {
-        setLoading(true);
-        let currentPage = pageNumber;
-        let messageFound = false;
-
-        while (!messageFound && hasMore) {
-          currentPage += 1;
-          const { data } = await api.get("/messages/" + ticketId, {
-            params: { pageNumber: currentPage }
-          });
-
-          if (data.messages.some(msg => msg.id === id)) {
-            messageFound = true;
-          }
-
-          dispatch({ type: "LOAD_MESSAGES", payload: data.messages });
-          setHasMore(data.hasMore);
-
-          if (!data.hasMore && !messageFound) {
-            break;
-          }
-        }
-
-        setPageNumber(currentPage);
-        setLoading(false);
-
-        setTimeout(() => {
-          const loadedElement = document.getElementById(id);
-          if (loadedElement) {
-            loadedElement.scrollIntoView({ behavior: 'smooth' });
-            loadedElement.classList.add(classes.messageHighlighted);
-            setTimeout(() => {
-              loadedElement.classList.remove(classes.messageHighlighted);
-            }, 2000);
-            checkScroll();
-          }
-        }, 100);
-      } catch (err) {
-        setLoading(false);
-        toastError(err);
-      }
-    }
-  };
-
-  const checkScroll = () => {
-    const messagesList = document.getElementById("messagesList");
-    if (messagesList) {
-      const { scrollTop, scrollHeight, clientHeight } = messagesList;
-      const scrollPosition = scrollHeight - scrollTop - clientHeight;
-      setShowScrollButton(scrollPosition > 100);
-    }
-  };
-
-  useEffect(() => {
-    if (!loading && messagesList.length > 0) {
-      checkScroll();
-    }
-  }, [loading, messagesList]);
-
   const renderQuotedMessage = (message) => {
     return (
       <div
         className={clsx(classes.quotedContainerLeft, {
           [classes.quotedContainerRight]: message.fromMe,
         })}
-        onClick={() => scrollToMessage(message.quotedMsg.id)}
       >
         <span
           className={clsx(classes.quotedSideColorLeft, {
@@ -772,7 +658,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
           {message.quotedMsg.mediaType === "video"
             && (
               <video
-                className={classes.messageVideo}
+                className={classes.messageMedia}
                 src={message.quotedMsg.mediaUrl}
                 controls
               />
@@ -788,11 +674,12 @@ const MessagesList = ({ ticketId, isGroup }) => {
                   target="_blank"
                   href={message.quotedMsg.mediaUrl}
                 >
-                  {t("messagesList.message.download")}
+                  Download
                 </Button>
               </div>
             )
           }
+
 
           {message.quotedMsg.mediaType === "image"
             ? (<ModalImageCors imageUrl={message.quotedMsg.mediaUrl} />)
@@ -811,7 +698,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
               {renderDailyTimestamps(message, index)}
               {renderMessageDivider(message, index)}
               {renderNumberTicket(message, index)}
-              <div id={message.id} className={classes.messageCenter}>
+              <div className={classes.messageCenter}>
                 <IconButton
                   variant="contained"
                   size="small"
@@ -830,31 +717,8 @@ const MessagesList = ({ ticketId, isGroup }) => {
                 <div>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 17" width="20" height="17">
                     <path fill="#df3333" d="M18.2 12.1c-1.5-1.8-5-2.7-8.2-2.7s-6.7 1-8.2 2.7c-.7.8-.3 2.3.2 2.8.2.2.3.3.5.3 1.4 0 3.6-.7 3.6-.7.5-.2.8-.5.8-1v-1.3c.7-1.2 5.4-1.2 6.4-.1l.1.1v1.3c0 .2.1.4.2.6.1.2.3.3.5.4 0 0 2.2.7 3.6.7.2 0 1.4-2 .5-3.1zM5.4 3.2l4.7 4.6 5.8-5.7-.9-.8L10.1 6 6.4 2.3h2.5V1H4.1v4.8h1.3V3.2z"></path>
-                  </svg>
-                  <span>{t("messagesList.message.voiceVideoLost")} {format(parseISO(message.createdAt), "HH:mm")}</span>
+                  </svg> <span>Chamada de voz/vídeo perdida às {format(parseISO(message.createdAt), "HH:mm")}</span>
                 </div>
-              </div>
-            </React.Fragment>
-          );
-        }
-        if (unsupportedMediaTypes.includes(message.mediaType)) {
-          return (
-            <React.Fragment key={message.id}>
-              {renderDailyTimestamps(message, index)}
-              {renderMessageDivider(message, index)}
-              {renderNumberTicket(message, index)}
-              <div id={message.id} className={classes.messageLeft} style={{ backgroundColor: "#E1F5FEEB" }}>
-                {isGroup && (
-                  <span className={classes.messageContactName}>
-                    {message.contact?.name}
-                  </span>
-                )}
-                <b>{t("messagesList.message.type")}</b>: <i>{message.mediaType}</i> <br />
-                {t("messagesList.message.notCompatibleWithSystem")} <br />
-                {t("messagesList.message.viewOnMobile")} <br />
-                <span className={classes.timestamp}>
-                  {format(parseISO(message.createdAt), "HH:mm")}
-                </span>
               </div>
             </React.Fragment>
           );
@@ -865,7 +729,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
               {renderDailyTimestamps(message, index)}
               {renderMessageDivider(message, index)}
               {renderNumberTicket(message, index)}
-              <div id={message.id} className={classes.messageLeft}>
+              <div className={classes.messageLeft}>
                 <IconButton
                   variant="contained"
                   size="small"
@@ -882,6 +746,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
                   </span>
                 )}
                 {message.isDeleted && (
+
                   <div>
                     <span className={classes.deletedMsg}>
                       <Block
@@ -889,25 +754,18 @@ const MessagesList = ({ ticketId, isGroup }) => {
                         fontSize="small"
                         className={classes.deletedIcon}
                       />
-                      {t("messagesList.message.deleted")}
+                      Mensagem apagada
                     </span>
                   </div>
+
                 )}
                 {(message.mediaUrl || message.mediaType === "location" || message.mediaType === "vcard"
-                  || message.mediaType === "multi_vcard"
+                  //|| message.mediaType === "multi_vcard" 
                 ) && checkMessageMedia(message)}
-                <div
-                  className={clsx(classes.textContentItem, {
-                    [classes.textContentItemEdited]: message.isEdited,
-                    [classes.mediaMessage]: message.mediaUrl && !message.body ? true : false
-
-                  })}
-                >
+                <div className={classes.textContentItem}>
                   {message.quotedMsg && renderQuotedMessage(message)}
-
-                  {message.mediaType !== "multi_vcard" && <WhatsMarked>{message.body}</WhatsMarked>}
+                  <MarkdownWrapper>{message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
-                    {message.isEdited && <span>{t("messagesList.message.edited")} </span>}
                     {format(parseISO(message.createdAt), "HH:mm")}
                   </span>
                 </div>
@@ -920,7 +778,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
               {renderDailyTimestamps(message, index)}
               {renderMessageDivider(message, index)}
               {renderNumberTicket(message, index)}
-              <div id={message.id} className={classes.messageRight}>
+              <div className={classes.messageRight}>
                 <IconButton
                   variant="contained"
                   size="small"
@@ -932,31 +790,23 @@ const MessagesList = ({ ticketId, isGroup }) => {
                   <ExpandMore />
                 </IconButton>
                 {(message.mediaUrl || message.mediaType === "location" || message.mediaType === "vcard"
-                  || message.mediaType === "multi_vcard"
+                  //|| message.mediaType === "multi_vcard" 
                 ) && checkMessageMedia(message)}
                 <div
                   className={clsx(classes.textContentItem, {
                     [classes.textContentItemDeleted]: message.isDeleted,
-                    [classes.textContentItemEdited]: message.isEdited,
-                    [classes.mediaMessage]: message.mediaUrl && !message.body ? true : false
                   })}
                 >
                   {message.isDeleted && (
-                    <div>
-                      <span className={classes.deletedMsg}>
-                        <Block
-                          color=""
-                          fontSize="small"
-                          className={classes.deletedIcon}
-                        />
-                        {t("messagesList.message.deleted")}
-                      </span>
-                    </div>
+                    <Block
+                      color="disabled"
+                      fontSize="small"
+                      className={classes.deletedIcon}
+                    />
                   )}
                   {message.quotedMsg && renderQuotedMessage(message)}
-                  {message.mediaType !== "multi_vcard" && <WhatsMarked>{message.body}</WhatsMarked>}
+                  <MarkdownWrapper>{message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
-                    {message.isEdited && <span>{t("messagesList.message.edited")} </span>}
                     {format(parseISO(message.createdAt), "HH:mm")}
                     {renderMessageAck(message)}
                   </span>
@@ -986,16 +836,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
         onScroll={handleScroll}
       >
         {messagesList.length > 0 ? renderMessages() : []}
-        <div ref={lastMessageRef} />
       </div>
-      <IconButton
-        className={classes.scrollToBottomButton}
-        onClick={scrollToBottom}
-        size="small"
-        style={{ display: showScrollButton ? "flex" : "none" }}
-      >
-        <KeyboardArrowDown />
-      </IconButton>
       {loading && (
         <div>
           <CircularProgress className={classes.circleLoading} />

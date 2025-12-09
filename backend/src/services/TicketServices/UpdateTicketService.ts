@@ -2,7 +2,10 @@ import CheckContactOpenTickets from "../../helpers/CheckContactOpenTickets";
 import SetTicketMessagesAsRead from "../../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../../libs/socket";
 import Ticket from "../../models/Ticket";
+import SendWhatsAppMessage from "../WbotServices/SendWhatsAppMessage";
+import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import ShowTicketService from "./ShowTicketService";
+import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 
 interface TicketData {
   status?: string;
@@ -29,11 +32,9 @@ const UpdateTicketService = async ({
   const { status, userId, queueId, whatsappId } = ticketData;
 
   const ticket = await ShowTicketService(ticketId);
-  if (ticket.status === "open") {
-    await SetTicketMessagesAsRead(ticket);
-  }
+  await SetTicketMessagesAsRead(ticket);
 
-  if (whatsappId && ticket.whatsappId !== whatsappId) {
+  if(whatsappId && ticket.whatsappId !== whatsappId) {
     await CheckContactOpenTickets(ticket.contactId, whatsappId);
   }
 
@@ -50,7 +51,7 @@ const UpdateTicketService = async ({
     userId
   });
 
-  if (whatsappId) {
+  if(whatsappId) {
     await ticket.update({
       whatsappId
     });
@@ -74,6 +75,18 @@ const UpdateTicketService = async ({
       action: "update",
       ticket
     });
+
+  const settingsmessageAccept = await ListSettingsServiceOne({key:"messageAccept"});
+  const messageAccept  = (JSON.stringify("enabled"));
+
+
+  if ((JSON.stringify(settingsmessageAccept ?.value)) === messageAccept) {
+
+    if (status === "open"){
+      const message = "*Mensagem Automática:*\n{{user.name}} iniciou seu atendimento.\nProtocolo de Atendimento: *{{protocol}}*\n\nAtendimento Iniciado as: {{hour}}.";
+      await SendWhatsAppMessage({ body: message, ticket });
+    }
+  }
 
   return { ticket, oldStatus, oldUserId };
 };

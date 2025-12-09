@@ -10,7 +10,6 @@ interface Request {
   name: string;
   number: string;
   isGroup: boolean;
-  address?: string;
   email?: string;
   profilePicUrl?: string;
   extraInfo?: ExtraInfo[];
@@ -21,7 +20,6 @@ const CreateOrUpdateContactService = async ({
   number: rawNumber,
   profilePicUrl,
   isGroup,
-  address = "",
   email = "",
   extraInfo = []
 }: Request): Promise<Contact> => {
@@ -44,7 +42,6 @@ const CreateOrUpdateContactService = async ({
       name,
       number,
       profilePicUrl,
-      address,
       email,
       isGroup,
       extraInfo

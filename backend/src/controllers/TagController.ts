@@ -4,14 +4,13 @@ import { getIO } from "../libs/socket";
 import AppError from "../errors/AppError";
 
 import CreateService from "../services/TagServices/CreateService";
-import DeleteAllService from "../services/TagServices/DeleteAllService";
-import DeleteService from "../services/TagServices/DeleteService";
 import ListService from "../services/TagServices/ListService";
-import ListServiceCount from "../services/TagServices/ListServiceCount";
+import UpdateService from "../services/TagServices/UpdateService";
 import ShowService from "../services/TagServices/ShowService";
+import DeleteService from "../services/TagServices/DeleteService";
 import SimpleListService from "../services/TagServices/SimpleListService";
 import SyncTagService from "../services/TagServices/SyncTagsService";
-import UpdateService from "../services/TagServices/UpdateService";
+import DeleteAllService from "../services/TagServices/DeleteAllService";
 
 type IndexQuery = {
   searchParam?: string;
@@ -22,20 +21,6 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   const { pageNumber, searchParam } = req.query as IndexQuery;
 
   const { tags, count, hasMore } = await ListService({
-    searchParam,
-    pageNumber
-  });
-
-  return res.json({ tags, count, hasMore });
-};
-
-export const indexCount = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
-  const { pageNumber, searchParam } = req.query as IndexQuery;
-
-  const { tags, count, hasMore } = await ListServiceCount({
     searchParam,
     pageNumber
   });

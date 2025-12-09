@@ -16,6 +16,7 @@ import {
   Code,
   ContactPhoneOutlined,
   DashboardOutlined,
+  DeveloperModeOutlined,
   LocalOffer,
   MenuBook,
   PeopleAltOutlined,
@@ -23,51 +24,31 @@ import {
   SettingsOutlined,
   SyncAlt,
   VpnKeyRounded,
-  WhatsApp,
-  SendTwoTone
+  WhatsApp
 } from "@material-ui/icons";
-import { useTranslation } from "react-i18next";
-import { Can } from "../components/Can";
-import { AuthContext } from "../context/Auth/AuthContext";
-import { WhatsAppsContext } from "../context/WhatsApp/WhatsAppsContext";
 
-const useStyles = makeStyles((theme) => ({
+import { i18n } from "../translate/i18n";
+import { WhatsAppsContext } from "../context/WhatsApp/WhatsAppsContext";
+import { AuthContext } from "../context/Auth/AuthContext";
+import { Can } from "../components/Can";
+
+const useStyles = makeStyles(theme => ({
   icon: {
-    color: theme.palette.secondary.main,
-    '&:hover': {
-      color: theme.palette.primary.main,
-    },
+    color: theme.palette.secondary.main
   },
   li: {
-    backgroundColor: theme.palette.menuItens.main || "#FFFFFF",
-    '&:hover': {
-      backgroundColor: theme.palette.secondary.main,
-    },
+    backgroundColor: theme.palette.menuItens.main
   },
   sub: {
-    backgroundColor: theme.palette.sub.main || "#F7F7F7",
-    fontWeight: 600,
-    fontSize: '1rem',
+    backgroundColor: theme.palette.sub.main
   },
   divider: {
-    backgroundColor: theme.palette.divide.main || "#E0E0E0",
-  },
-  activeItem: {
-    backgroundColor: theme.palette.primary.main,
-    '&:hover': {
-      backgroundColor: theme.palette.secondary.main,
-    },
-  },
-  badge: {
-    '& .MuiBadge-dot': {
-      backgroundColor: theme.palette.error.main || "#F44336",
-    },
-  },
+    backgroundColor: theme.palette.divide.main
+  }
 }));
 
-
 function ListItemLink(props) {
-  const { icon, primary, to, className, active } = props;
+  const { icon, primary, to, className } = props;
   const classes = useStyles();
 
   const renderLink = React.useMemo(
@@ -79,8 +60,8 @@ function ListItemLink(props) {
   );
 
   return (
-    <li className={className}>
-      <ListItem button component={renderLink} className={active ? classes.activeItem : ''}>
+    <li className={classes.li}>
+      <ListItem button component={renderLink} className={className}>
         {icon ? <ListItemIcon className={classes.icon}>{icon}</ListItemIcon> : null}
         <ListItemText primary={primary} />
       </ListItem>
@@ -89,12 +70,11 @@ function ListItemLink(props) {
 }
 
 const MainListItems = (props) => {
-  const { drawerClose, location } = props;
+  const { drawerClose } = props;
   const { whatsApps } = useContext(WhatsAppsContext);
   const { user } = useContext(AuthContext);
   const [connectionWarning, setConnectionWarning] = useState(false);
   const classes = useStyles();
-  const { t } = useTranslation();
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -120,47 +100,30 @@ const MainListItems = (props) => {
 
   return (
     <div onClick={drawerClose}>
-
-      <Divider className={classes.divider} />
-      <ListSubheader inset className={classes.sub}>
-        {t("mainDrawer.listItems.general")}
-      </ListSubheader>
-      <Divider className={classes.divider} />
       <ListItemLink
         to="/"
         primary="Dashboard"
         icon={<DashboardOutlined />}
-        active={location.pathname === '/'}
       />
       <ListItemLink
         to="/tickets"
-        primary={t("mainDrawer.listItems.tickets")}
+        primary={i18n.t("mainDrawer.listItems.tickets")}
         icon={<WhatsApp />}
-        active={location.pathname === '/tickets'}
-      />
-      <ListItemLink
-        to="/disp"
-        primary={t("mainDrawer.listItems.disparo")}
-        icon={<SendTwoTone />}
-        active={location.pathname === '/disp'}
       />
       <ListItemLink
         to="/contacts"
-        primary={t("mainDrawer.listItems.contacts")}
+        primary={i18n.t("mainDrawer.listItems.contacts")}
         icon={<ContactPhoneOutlined />}
-        active={location.pathname === '/contacts'}
       />
       <ListItemLink
         to="/quickAnswers"
-        primary={t("mainDrawer.listItems.quickAnswers")}
+        primary={i18n.t("mainDrawer.listItems.quickAnswers")}
         icon={<QuestionAnswerOutlined />}
-        active={location.pathname === '/quickAnswers'}
       />
       <ListItemLink
         to="/tags"
-        primary={t("mainDrawer.listItems.tags")}
+        primary={i18n.t("mainDrawer.listItems.tags")}
         icon={<LocalOffer />}
-        active={location.pathname === '/tags'}
       />
       <Can
         role={user.profile}
@@ -169,59 +132,61 @@ const MainListItems = (props) => {
           <>
             <Divider className={classes.divider} />
             <ListSubheader inset className={classes.sub}>
-              {t("mainDrawer.listItems.administration")}
+              {i18n.t("mainDrawer.listItems.administration")}
             </ListSubheader>
-            <Divider className={classes.divider} />
             <ListItemLink
               to="/connections"
-              primary={t("mainDrawer.listItems.connections")}
+              primary={i18n.t("mainDrawer.listItems.connections")}
               icon={
-                <Badge badgeContent={connectionWarning ? "!" : 0} color="error" overlap="rectangular" className={classes.badge}>
+                <Badge badgeContent={connectionWarning ? "!" : 0} color="error" overlap="rectangular" >
                   <SyncAlt />
                 </Badge>
               }
-              active={location.pathname === '/connections'}
             />
             <ListItemLink
               to="/users"
-              primary={t("mainDrawer.listItems.users")}
+              primary={i18n.t("mainDrawer.listItems.users")}
               icon={<PeopleAltOutlined />}
-              active={location.pathname === '/users'}
             />
             <ListItemLink
               to="/queues"
-              primary={t("mainDrawer.listItems.queues")}
+              primary={i18n.t("mainDrawer.listItems.queues")}
               icon={<AccountTreeOutlined />}
-              active={location.pathname === '/queues'}
+            />
+            <ListItemLink
+              to="/Integrations"
+              primary={i18n.t("mainDrawer.listItems.integrations")}
+              icon={<DeveloperModeOutlined />}
             />
             <ListItemLink
               to="/settings"
-              primary={t("mainDrawer.listItems.settings")}
+              primary={i18n.t("mainDrawer.listItems.settings")}
               icon={<SettingsOutlined />}
-              active={location.pathname === '/settings'}
             />
             <Divider className={classes.divider} />
             <ListSubheader inset className={classes.sub}>
-              {t("mainDrawer.listItems.apititle")}
+              {i18n.t("mainDrawer.listItems.apititle")}
             </ListSubheader>
-            <Divider className={classes.divider} />
             <ListItemLink
               to="/api"
-              primary={t("mainDrawer.listItems.api")}
-              icon={<Code />}
-              active={location.pathname === '/api'}
+              primary={i18n.t("mainDrawer.listItems.api")}
+              icon={
+                <Code />
+              }
             />
             <ListItemLink
               to="/apidocs"
-              primary={t("mainDrawer.listItems.apidocs")}
-              icon={<MenuBook />}
-              active={location.pathname === '/apidocs'}
+              primary={i18n.t("mainDrawer.listItems.apidocs")}
+              icon={
+                <MenuBook />
+              }
             />
             <ListItemLink
               to="/apikey"
-              primary={t("mainDrawer.listItems.apikey")}
-              icon={<VpnKeyRounded />}
-              active={location.pathname === '/apikey'}
+              primary={i18n.t("mainDrawer.listItems.apikey")}
+              icon={
+                <VpnKeyRounded />
+              }
             />
           </>
         )}

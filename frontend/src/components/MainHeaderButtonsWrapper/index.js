@@ -1,8 +1,9 @@
-import { makeStyles } from "@material-ui/core/styles";
 import React from "react";
 
-const useStyles = makeStyles((theme) => ({
-	headerButtonsWrapper: {
+import { makeStyles } from "@material-ui/core/styles";
+
+const useStyles = makeStyles(theme => ({
+	MainHeaderButtonsWrapper: {
 		display: "flex",
 		marginLeft: "auto",
 		"& > *": {
@@ -11,10 +12,10 @@ const useStyles = makeStyles((theme) => ({
 	},
 }));
 
-const HeaderButtonsWrapper = ({ children }) => {
+const MainHeaderButtonsWrapper = ({ children }) => {
 	const classes = useStyles();
 
-	return <div className={classes.headerButtonsWrapper}>{children}</div>;
+	return <div className={classes.MainHeaderButtonsWrapper}>{children}</div>;
 };
 
-export default HeaderButtonsWrapper;
+export default MainHeaderButtonsWrapper;

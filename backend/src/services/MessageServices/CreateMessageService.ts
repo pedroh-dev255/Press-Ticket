@@ -1,6 +1,5 @@
 import { getIO } from "../../libs/socket";
 import Message from "../../models/Message";
-import OldMessage from "../../models/OldMessage";
 import Ticket from "../../models/Ticket";
 import Whatsapp from "../../models/Whatsapp";
 
@@ -21,21 +20,6 @@ interface Request {
 const CreateMessageService = async ({
   messageData
 }: Request): Promise<Message> => {
-  if (messageData.mediaType === "multi_vcard") {
-
-    if (typeof messageData.body === 'string') {
-      try {
-        const parsedBody = JSON.parse(messageData.body);
-        if (Array.isArray(parsedBody)) {
-          console.log("Array length:", parsedBody.length);
-          console.log("First item:", parsedBody[0]);
-        }
-      } catch (error) {
-        console.error("Error parsing message body:", error);
-      }
-    }
-  }
-  
   await Message.upsert(messageData);
 
   const message = await Message.findByPk(messageData.id, {
@@ -45,12 +29,11 @@ const CreateMessageService = async ({
         model: Ticket,
         as: "ticket",
         include: [
-          "contact",
-          "queue",
+          "contact", "queue",
           {
             model: Whatsapp,
             as: "whatsapp",
-            attributes: ["name", "color"]
+            attributes: ["name"]
           }
         ]
       },
@@ -58,10 +41,6 @@ const CreateMessageService = async ({
         model: Message,
         as: "quotedMsg",
         include: ["contact"]
-      },
-      {
-        model: OldMessage,
-        as: "oldMessages"
       }
     ]
   });

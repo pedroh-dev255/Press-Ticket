@@ -1,3 +1,6 @@
+import React, { useState, useContext, useEffect } from "react";
+import clsx from "clsx";
+
 import {
   AppBar,
   Divider,
@@ -9,31 +12,25 @@ import {
   Menu,
   MenuItem,
   Toolbar,
-  Tooltip,
   Typography
 } from "@material-ui/core";
-import { CheckCircle, Info } from "@material-ui/icons";
-import AccountCircle from "@material-ui/icons/AccountCircle";
-import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
+
 import MenuIcon from "@material-ui/icons/Menu";
-import clsx from "clsx";
-import React, { useContext, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
-import defaultLogo from '../assets/logo.jpg';
-import { getImageUrl } from '../helpers/imageHelper';
-import BackdropLoading from "../components/BackdropLoading";
-import LanguageSelector from "../components/LanguageSelector";
+import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
+import AccountCircle from "@material-ui/icons/AccountCircle";
+
+import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
-import ThemeSelector from '../components/ThemeSelector';
 import UserModal from "../components/UserModal";
 import { AuthContext } from "../context/Auth/AuthContext";
-import toastError from "../errors/toastError";
-import api from "../services/api";
-import openSocket from "../services/socket-io";
-import MainListItems from "./MainListItems";
+import BackdropLoading from "../components/BackdropLoading";
+import { i18n } from "../translate/i18n";
 
-const systemVersion = "v1.13.2";
+import api from "../services/api";
+import toastError from "../errors/toastError";
+import { system } from "../config.json";
+import { systemVersion } from "../../package.json";
+import logodash from "../assets/logo-dash.png";
 
 const drawerWidth = 240;
 
@@ -46,9 +43,9 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   toolbar: {
-    paddingRight: 24,
+    paddingRight: 24, // keep right padding when drawer closed
     color: "#ffffff",
-    background: theme.palette?.primary?.main || "#6B62FE",
+    background: theme.palette.toolbar.main
   },
   toolbarIcon: {
     display: "flex",
@@ -56,7 +53,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "flex-end",
     padding: "0 8px",
     minHeight: "48px",
-    backgroundColor: theme.palette.background.paper,
+    backgroundColor: theme.palette.toolbarIcon.main
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
@@ -122,14 +119,13 @@ const useStyles = makeStyles((theme) => ({
   systemCss: {
     display: "flex",
     justifyContent: "center",
-    fontSize: 12,
-  },
+    opacity: 0.2,
+    fontSize: 12
+  }
 }));
 
-const LoggedInLayout = ({ children, toggleTheme, onThemeConfigUpdate }) => {
+const LoggedInLayout = ({ children }) => {
   const classes = useStyles();
-  const { t } = useTranslation();
-  const location = useLocation();
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -137,112 +133,6 @@ const LoggedInLayout = ({ children, toggleTheme, onThemeConfigUpdate }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerVariant, setDrawerVariant] = useState("permanent");
   const { user } = useContext(AuthContext);
-  const [latestVersion, setLatestVersion] = useState("");
-  const themeStorage = localStorage.getItem("theme");
-  const [companyData, setCompanyData] = useState({
-    logo: defaultLogo,
-    name: "Press Ticket",
-    url: "https://github.com/rtenorioh/Press-Ticket"
-  });
-
-  useEffect(() => {
-    const fetchCompanyData = async () => {
-      try {
-        const { data } = await api.get("/personalizations");
-
-        if (data && data.length > 0) {
-
-          const lightConfig = data.find(themeConfig => themeConfig.theme === "light");
-
-          if (lightConfig) {
-            setCompanyData(prevData => ({
-              ...prevData,
-              name: lightConfig.company || "Press Ticket",
-              url: lightConfig.url || "https://github.com/rtenorioh/Press-Ticket"
-            }));
-          }
-        }
-      } catch (err) {
-        toastError(err);
-      }
-    };
-
-    const socket = openSocket();
-    socket.on("personalization", data => {
-      if (data.action === "update") {
-        fetchCompanyData();
-      }
-    });
-
-    fetchCompanyData();
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    const fetchLogo = async () => {
-      try {
-        const { data } = await api.get("/personalizations");
-
-        if (data && data.length > 0) {
-          const lightConfig = data.find(themeConfig => themeConfig.theme === "light");
-          const darkConfig = data.find(themeConfig => themeConfig.theme === "dark");
-
-          if (themeStorage === "light" && lightConfig && lightConfig.logo) {
-            setCompanyData(prevData => ({
-              ...prevData,
-              logo: lightConfig.logo
-            }));
-            onThemeConfigUpdate("light", { logo: lightConfig.logo });
-          } else if (themeStorage === "dark" && darkConfig && darkConfig.logo) {
-            setCompanyData(prevData => ({
-              ...prevData,
-              logo: darkConfig.logo
-            }));
-            onThemeConfigUpdate("dark", { logo: darkConfig.logo });
-          } else {
-            setCompanyData(prevData => ({
-              ...prevData,
-              logo: defaultLogo
-            }));
-          }
-        }
-
-      } catch (err) {
-        toastError(err);
-      }
-    };
-
-    fetchLogo();
-  }, [themeStorage, onThemeConfigUpdate]);
-
-  useEffect(() => {
-    const compareVersions = async () => {
-      const latest = await fetchLatestRelease();
-
-      if (latest) {
-        setLatestVersion(latest);
-        if (systemVersion < latest) {
-          console.warn(`Uma nova versão está disponível: ${latest}. Atualize para a versão mais recente.`);
-        }
-      }
-    };
-
-    compareVersions();
-  }, []);
-
-  const fetchLatestRelease = async () => {
-    try {
-      const response = await fetch("https://api.github.com/repos/rtenorioh/Press-Ticket/releases/latest");
-      const data = await response.json();
-      return data.tag_name;
-    } catch (error) {
-      console.error("Erro ao buscar a versão mais recente no GitHub:", error);
-      return null;
-    }
-  };
 
   useEffect(() => {
 
@@ -256,12 +146,8 @@ const LoggedInLayout = ({ children, toggleTheme, onThemeConfigUpdate }) => {
           setDrawerOpen(settingIndex[0].value === "disabled" ? false : true);
 
         } catch (err) {
-          if (err.response && err.response.status === 403) {
-            toastError("Acesso negado. Você não tem permissão para acessar esta configuração.");
-          } else {
-            setDrawerOpen(true);
-            toastError(err);
-          }
+          setDrawerOpen(true);
+          toastError(err);
         }
       };
       fetchDrawerState();
@@ -320,14 +206,14 @@ const LoggedInLayout = ({ children, toggleTheme, onThemeConfigUpdate }) => {
         open={drawerOpen}
       >
         <div className={classes.toolbarIcon}>
-          <img alt="logo" src={getImageUrl(companyData.logo)} style={{ height: 50, marginBottom: 10, marginTop: 5 }} />
+          <img src={logodash} alt="logo" />
           <IconButton color="secondary" onClick={() => setDrawerOpen(!drawerOpen)}>
             <ChevronLeftIcon />
           </IconButton>
         </div>
         <Divider />
         <List>
-          <MainListItems drawerClose={drawerClose} location={location} />
+          <MainListItems drawerClose={drawerClose} />
         </List>
         <Divider />
       </Drawer>
@@ -361,13 +247,8 @@ const LoggedInLayout = ({ children, toggleTheme, onThemeConfigUpdate }) => {
             noWrap
             className={classes.title}
           >
-            {t("mainDrawer.appBar.message.hi")} {user.name}, {t("mainDrawer.appBar.message.text")} {companyData.name || "Press Ticket"}.
+            {i18n.t("mainDrawer.appBar.message.hi")} {user.name}, {i18n.t("mainDrawer.appBar.message.text")} {system.name || "Press Ticket"}
           </Typography>
-
-          <ThemeSelector toggleTheme={toggleTheme} />
-
-          <LanguageSelector />
-
           {user.id && <NotificationsPopOver />}
 
           <div>
@@ -396,32 +277,15 @@ const LoggedInLayout = ({ children, toggleTheme, onThemeConfigUpdate }) => {
               onClose={handleCloseMenu}
             >
               <MenuItem onClick={handleOpenUserModal}>
-                {t("mainDrawer.appBar.user.profile")}
+                {i18n.t("mainDrawer.appBar.user.profile")}
               </MenuItem>
               <MenuItem onClick={handleClickLogout}>
-                {t("mainDrawer.appBar.user.logout")}
+                {i18n.t("mainDrawer.appBar.user.logout")}
               </MenuItem>
               <Divider />
               <span className={classes.systemCss}>
-                <Link
-                  color="inherit"
-                  href={companyData.url || "https://github.com/rtenorioh/Press-Ticket"}
-                  style={{ display: "flex", alignItems: "center", marginTop: 10 }}
-                >
-                  {latestVersion && latestVersion > systemVersion ? (
-                    <span style={{ color: "#eee8aa" }}>
-                      <Tooltip title="Entrar em contato com o Suporte para solicitar Atualização!" arrow placement="left-start" >
-                        <Info fontSize="small" />
-                      </Tooltip>
-                    </span>
-                  ) : (
-                    <span style={{ color: "green" }}>
-                      <Tooltip title="Versão atualizada!" arrow placement="left-start" >
-                        <CheckCircle fontSize="small" />
-                      </Tooltip>
-                    </span>
-                  )}
-                  <span style={{ marginLeft: "5px" }}>{systemVersion}</span>
+                <Link color="inherit" href={system.url || "https://github.com/pedroh-dev255/Press-Ticket"}>
+                  v{systemVersion}
                 </Link>
               </span>
             </Menu>

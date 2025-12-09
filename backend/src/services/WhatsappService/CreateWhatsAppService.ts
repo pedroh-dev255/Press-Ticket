@@ -12,7 +12,6 @@ interface Request {
   status?: string;
   isDefault?: boolean;
   isDisplay?: boolean;
-  color?: string;
 }
 
 interface Response {
@@ -27,8 +26,7 @@ const CreateWhatsAppService = async ({
   greetingMessage,
   farewellMessage,
   isDefault = false,
-  isDisplay = false,
-  color = "#5C59A0"
+  isDisplay = false
 }: Request): Promise<Response> => {
   const schema = Yup.object().shape({
     name: Yup.string()
@@ -45,14 +43,11 @@ const CreateWhatsAppService = async ({
           return !nameExists;
         }
       ),
-    isDefault: Yup.boolean().required(),
-    color: Yup.string()
-      .matches(/^#(?:[0-9a-fA-F]{3}){1,2}$/, "Invalid color format")
-      .nullable()
+    isDefault: Yup.boolean().required()
   });
 
   try {
-    await schema.validate({ name, status, isDefault, color });
+    await schema.validate({ name, status, isDefault });
   } catch (err) {
     throw new AppError(err.message);
   }
@@ -83,8 +78,7 @@ const CreateWhatsAppService = async ({
       greetingMessage,
       farewellMessage,
       isDefault,
-      isDisplay,
-      color
+      isDisplay
     },
     { include: ["queues"] }
   );

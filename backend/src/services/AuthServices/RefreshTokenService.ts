@@ -1,15 +1,14 @@
-import { Response as Res } from "express";
 import { verify } from "jsonwebtoken";
+import { Response as Res } from "express";
 
-import authConfig from "../../config/auth";
+import User from "../../models/User";
 import AppError from "../../errors/AppError";
+import ShowUserService from "../UserServices/ShowUserService";
+import authConfig from "../../config/auth";
 import {
   createAccessToken,
   createRefreshToken
 } from "../../helpers/CreateTokens";
-import User from "../../models/User";
-import UserSession from "../../models/UserSession";
-import ShowUserService from "../UserServices/ShowUserService";
 
 interface RefreshTokenPayload {
   id: string;
@@ -37,63 +36,11 @@ export const RefreshTokenService = async (
       throw new AppError("ERR_SESSION_EXPIRED", 401);
     }
 
-    if (!user.active) {
-      res.clearCookie("jrt");
-      throw new AppError("ERR_USER_INACTIVE", 401);
-    }
-
-    const session = await UserSession.findOne({
-      where: {
-        userId: user.id,
-        logoutAt: null
-      }
-    });
-
-    if (!session) {
-      res.clearCookie("jrt");
-      throw new AppError("ERR_SESSION_EXPIRED", 401);
-    }
-
-    const lastActivity = new Date(session.lastActivity).getTime();
-    const currentTime = new Date().getTime();
-    const diffHours = (currentTime - lastActivity) / (1000 * 60 * 60);
-
-    if (diffHours >= 8) {
-      await session.update({
-        logoutAt: new Date()
-      });
-
-      await user.update({
-        online: false,
-        currentSessionId: null
-      });
-
-      const io = require("../../libs/socket").getIO();
-      io.emit("userSessionExpired", {
-        userId: user.id,
-        expired: true,
-        message: "ERR_SESSION_EXPIRED"
-      });
-
-      res.clearCookie("jrt");
-      throw new AppError("ERR_SESSION_EXPIRED", 401);
-    }
-
-    await session.update({
-      lastActivity: new Date()
-    });
-
     const newToken = createAccessToken(user);
     const refreshToken = createRefreshToken(user);
 
     return { user, newToken, refreshToken };
   } catch (err) {
-    if (err instanceof AppError) {  
-      if (err.message === "ERR_USER_INACTIVE") {
-        throw err;
-      }
-    }
-
     res.clearCookie("jrt");
     throw new AppError("ERR_SESSION_EXPIRED", 401);
   }

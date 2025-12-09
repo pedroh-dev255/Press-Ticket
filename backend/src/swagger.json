@@ -1,578 +1,92 @@
 {
-  "openapi": "3.0.0",
-  "info": {
-    "title": "Documentação da API do Press Ticket",
-    "description": "Documentação da API para envio de mensagens e gerenciamento de contatos.",
-    "contact": {
-      "email": "robson.tenorio@gmail.com"
-    },
-    "version": "1.0.0"
-  },
-  "servers": [
-    {
-      "url": "https://apiback.pressticket.com.br",
-      "description": "API Press Ticket"
-    }
-  ],
-  "paths": {
-    "/v1/messages/send": {
-      "post": {
-        "summary": "Envio de Mensagens de Texto",
-        "description": "Envio de Mensagens de Texto via API\n\nPermissões requeridas: `create:messages`",
-        "tags": [
-          "Messages"
-        ],
-        "security": [
-          {
-            "apiToken": [
-              "create:messages"
-            ]
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendMessage"
-              },
-              "examples": {
-                "text": {
-                  "value": {
-                    "number": "5522999999999",
-                    "body": "Mensagem de Teste da API",
-                    "userId": 1,
-                    "queueId": 1,
-                    "whatsappId": 1
-                  }
-                }
-              }
-            }
-          }
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Documentação da API do Press Ticket",
+        "description": "Documentação da API para envio de mensagens e mídia.",
+        "contact": {
+            "email": "pedro@phsolucoes.site"
         },
-        "responses": {
-          "200": {
-            "description": "Mensagem enviada com sucesso"
-          },
-          "401": {
-            "description": "Token inválido ou não fornecido"
-          },
-          "403": {
-            "description": "Token não tem permissão 'create:messages'"
-          },
-          "500": {
-            "description": "Erro interno!"
-          }
-        }
-      }
+        "version": "1.7.0"
     },
-    "/v1/messages/send-media": {
-      "post": {
-        "summary": "Envio de Mensagens com Mídia",
-        "description": "Envio de Mensagens com Mídia (imagens, documentos, áudio) via API\n\nPermissões requeridas: `create:messages`",
-        "tags": [
-          "Messages"
-        ],
-        "security": [
-          {
-            "apiToken": [
-              "create:messages"
-            ]
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "number": {
-                    "type": "string",
-                    "description": "Número do destinatário no formato DDI+DDD+NÚMERO (ex: 5522999999999)"
-                  },
-                  "body": {
-                    "type": "string",
-                    "description": "Legenda ou texto da mensagem (opcional)"
-                  },
-                  "medias": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "binary"
+    "servers": [
+        {
+            "url": "https://api.phssolucoes.space",
+            "description": "API Press Ticket"
+        }
+    ],
+    "paths": {
+        "/api/messages/send": {
+            "post": {
+                "summary": "Envio de Mensagens",
+                "description": "Envio de Mensagens",
+                "tags": [
+                    "SEND"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#components/schemas/SEND"
+                            },
+                            "examples": {
+                                "SEND": {
+                                    "value": {
+                                        "number": "5563999999999",
+                                        "body": "Mensagem de Teste da API"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "$ref": "#components/schemas/SEND"
+                                }
+                            }
+                        }
                     },
-                    "description": "Arquivos de mídia para envio (imagens, documentos, áudio)"
-                  },
-                  "userId": {
-                    "type": "integer",
-                    "description": "ID do usuário que está enviando a mensagem"
-                  },
-                  "queueId": {
-                    "type": "integer",
-                    "description": "ID da fila"
-                  },
-                  "whatsappId": {
-                    "type": "integer",
-                    "description": "ID da conexão do WhatsApp"
-                  }
-                },
-                "required": ["number", "medias", "userId", "queueId", "whatsappId"]
-              },
-              "examples": {
-                "media": {
-                  "value": {
-                    "number": "5522999999999",
-                    "body": "Legenda da imagem",
-                    "medias": "[arquivo binário]",
-                    "userId": 1,
-                    "queueId": 1,
-                    "whatsappId": 1
-                  }
+                    "401": {
+                        "description": "Acesso não autorizado!"
+                    },
+                    "500": {
+                        "description": "Erro interno!"
+                    }
                 }
-              }
             }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Mensagem com mídia enviada com sucesso"
-          },
-          "401": {
-            "description": "Token inválido ou não fornecido"
-          },
-          "403": {
-            "description": "Token não tem permissão 'create:messages'"
-          },
-          "500": {
-            "description": "Erro interno!"
-          }
         }
-      }
+        
     },
-    "/v1/contacts": {
-      "get": {
-        "summary": "Listar Contatos",
-        "description": "Listar todos os contatos via API\n\nPermissões requeridas: `read:contacts`",
-        "tags": [
-          "Contacts"
-        ],
-        "security": [
-          {
-            "apiToken": [
-              "read:contacts"
-            ]
-          }
-        ],
-        "parameters": [
-          {
-            "name": "searchParam",
-            "in": "query",
-            "description": "Parâmetro de busca para filtrar contatos",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "pageNumber",
-            "in": "query",
-            "description": "Número da página para paginação",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "tags",
-            "in": "query",
-            "description": "IDs das tags para filtrar contatos, separados por vírgula",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Lista de contatos retornada com sucesso"
-          },
-          "401": {
-            "description": "Token inválido ou não fornecido"
-          },
-          "403": {
-            "description": "Token não tem permissão 'read:contacts'"
-          },
-          "500": {
-            "description": "Erro interno!"
-          }
-        }
-      },
-      "post": {
-        "summary": "Criar Contato",
-        "description": "Criar um novo contato via API\n\nPermissões requeridas: `create:contacts`",
-        "tags": [
-          "Contacts"
-        ],
-        "security": [
-          {
-            "apiToken": [
-              "create:contacts"
-            ]
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Contact"
-              },
-              "examples": {
-                "basic": {
-                  "value": {
-                    "name": "Test Contact API",
-                    "number": "5522999999999"
-                  }
-                },
-                "complete": {
-                  "value": {
-                    "name": "Test Contact API",
-                    "number": "5522999999999",
-                    "email": "test@example.com",
-                    "address": "Street Name, 123",
-                    "extraInfo": [
-                      {
-                        "name": "RG",
-                        "value": "123456789"
-                      },
-                      {
-                        "name": "CPF",
-                        "value": "12345678901"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Contato criado com sucesso"
-          },
-          "401": {
-            "description": "Token inválido ou não fornecido"
-          },
-          "403": {
-            "description": "Token não tem permissão 'create:contacts'"
-          },
-          "500": {
-            "description": "Erro interno!"
-          }
-        }
-      }
-    },
-    "/v1/contacts/{contactId}": {
-      "get": {
-        "summary": "Obter Contato",
-        "description": "Obter detalhes de um contato específico via API\n\nPermissões requeridas: `read:contacts`",
-        "tags": [
-          "Contacts"
-        ],
-        "security": [
-          {
-            "apiToken": [
-              "read:contacts"
-            ]
-          }
-        ],
-        "parameters": [
-          {
-            "name": "contactId",
-            "in": "path",
-            "description": "ID do contato a ser consultado",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Detalhes do contato retornados com sucesso"
-          },
-          "401": {
-            "description": "Token inválido ou não fornecido"
-          },
-          "403": {
-            "description": "Token não tem permissão 'read:contacts'"
-          },
-          "404": {
-            "description": "Contato não encontrado"
-          },
-          "500": {
-            "description": "Erro interno!"
-          }
-        }
-      },
-      "put": {
-        "summary": "Atualizar Contato",
-        "description": "Atualizar um contato existente via API\n\nPermissões requeridas: `update:contacts`",
-        "tags": [
-          "Contacts"
-        ],
-        "security": [
-          {
-            "apiToken": [
-              "update:contacts"
-            ]
-          }
-        ],
-        "parameters": [
-          {
-            "name": "contactId",
-            "in": "path",
-            "description": "ID do contato a ser atualizado",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Contact"
-              },
-              "examples": {
-                "update": {
-                  "value": {
-                    "name": "Updated Contact Name",
-                    "number": "5522999999999",
-                    "email": "updated@example.com",
-                    "address": "New Address, 456"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Contato atualizado com sucesso"
-          },
-          "401": {
-            "description": "Token inválido ou não fornecido"
-          },
-          "403": {
-            "description": "Token não tem permissão 'update:contacts'"
-          },
-          "404": {
-            "description": "Contato não encontrado"
-          },
-          "500": {
-            "description": "Erro interno!"
-          }
-        }
-      },
-      "delete": {
-        "summary": "Excluir Contato",
-        "description": "Excluir um contato existente via API\n\nPermissões requeridas: `delete:contacts`",
-        "tags": [
-          "Contacts"
-        ],
-        "security": [
-          {
-            "apiToken": [
-              "delete:contacts"
-            ]
-          }
-        ],
-        "parameters": [
-          {
-            "name": "contactId",
-            "in": "path",
-            "description": "ID do contato a ser excluído",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Contato excluído com sucesso"
-          },
-          "401": {
-            "description": "Token inválido ou não fornecido"
-          },
-          "403": {
-            "description": "Token não tem permissão 'delete:contacts'"
-          },
-          "404": {
-            "description": "Contato não encontrado"
-          },
-          "500": {
-            "description": "Erro interno!"
-          }
-        }
-      }
-    },
-    "/v1/contact": {
-      "post": {
-        "summary": "Consultar Contato",
-        "description": "Consultar um contato específico por nome, número, endereço ou email via API\n\nPermissões requeridas: `create:contacts`",
-        "tags": [
-          "Contacts"
-        ],
-        "security": [
-          {
-            "apiToken": [
-              "create:contacts"
-            ]
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
+    "components": {
+        "schemas": {
+            "SEND": {
                 "type": "object",
                 "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "Nome do contato para busca"
-                  },
-                  "number": {
-                    "type": "string",
-                    "description": "Número do contato para busca"
-                  },
-                  "address": {
-                    "type": "string",
-                    "description": "Endereço do contato para busca"
-                  },
-                  "email": {
-                    "type": "string",
-                    "description": "Email do contato para busca"
-                  }
+                    "number": {
+                        "type": "number"
+                    },
+                    "body": {
+                        "type": "string"
+                    }
                 }
-              },
-              "examples": {
-                "byNumber": {
-                  "value": {
-                    "number": "5522999999999"
-                  }
-                },
-                "byName": {
-                  "value": {
-                    "name": "Test Contact"
-                  }
-                }
-              }
             }
-          }
         },
-        "responses": {
-          "200": {
-            "description": "Contato encontrado com sucesso"
-          },
-          "401": {
-            "description": "Token inválido ou não fornecido"
-          },
-          "403": {
-            "description": "Token não tem permissão 'create:contacts'"
-          },
-          "404": {
-            "description": "Contato não encontrado"
-          },
-          "500": {
-            "description": "Erro interno!"
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "schemas": {
-      "SendMessage": {
-        "type": "object",
-        "required": [
-          "number",
-          "body",
-          "userId",
-          "queueId",
-          "whatsappId"
-        ],
-        "properties": {
-          "number": {
-            "type": "string",
-            "description": "Número do destinatário no formato DDI+DDD+NÚMERO (ex: 5522999999999)"
-          },
-          "body": {
-            "type": "string",
-            "description": "Conteúdo da mensagem"
-          },
-          "userId": {
-            "type": "integer",
-            "description": "ID do usuário que está enviando a mensagem"
-          },
-          "queueId": {
-            "type": "integer",
-            "description": "ID da fila"
-          },
-          "whatsappId": {
-            "type": "integer",
-            "description": "ID da conexão do WhatsApp"
-          }
-        }
-      },
-      "Contact": {
-        "type": "object",
-        "required": [
-          "name",
-          "number"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Nome do contato"
-          },
-          "number": {
-            "type": "string",
-            "description": "Número do contato no formato DDI+DDD+NÚMERO (ex: 5522999999999)"
-          },
-          "email": {
-            "type": "string",
-            "description": "Email do contato"
-          },
-          "address": {
-            "type": "string",
-            "description": "Endereço do contato"
-          },
-          "extraInfo": {
-            "type": "array",
-            "description": "Informações adicionais do contato",
-            "items": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "description": "Nome do campo adicional"
-                },
-                "value": {
-                  "type": "string",
-                  "description": "Valor do campo adicional"
-                }
-              }
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
             }
-          }
         }
-      }
-    },
-    "securitySchemes": {
-      "apiToken": {
-        "type": "apiKey",
-        "name": "x-api-token",
-        "in": "header",
-        "description": "Token de API para autenticação. Requer permissões específicas para cada rota:\n- `create:messages`: Para enviar mensagens\n- `create:contacts`: Para criar contatos"
-      }
     }
-  }
 }

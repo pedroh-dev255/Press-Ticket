@@ -1,12 +1,9 @@
-import fs from "fs/promises";
 import { Configuration, CreateImageRequestSizeEnum, OpenAIApi } from "openai";
-import path from "path";
 import qrCode from "qrcode-terminal";
 import { Client, LocalAuth, MessageMedia } from "whatsapp-web.js";
 import AppError from "../errors/AppError";
 import Integration from "../models/Integration";
 import Whatsapp from "../models/Whatsapp";
-import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 import { handleMessage } from "../services/WbotServices/wbotMessageListener";
 import { logger } from "../utils/logger";
 import { getIO } from "./socket";
@@ -23,14 +20,17 @@ interface CreateImageRequest {
 }
 
 async function findIntegrationValue(key: string): Promise<string | null> {
+  // Encontre a instância de integração com base na chave fornecida
   const integration = await Integration.findOne({
     where: { key }
   });
 
+  // Se a instância for encontrada, retorne o valor
   if (integration) {
     return integration.value;
   }
 
+  // Caso contrário, retorne null
   return null as string | null;
 }
 
@@ -50,12 +50,13 @@ let openai: OpenAIApi;
   openai = new OpenAIApi(configuration);
 })();
 
+// gera resposta em texto
 const getDavinciResponse = async (clientText: string): Promise<string> => {
   const options = {
-    model: "text-davinci-003",
-    prompt: clientText,
-    temperature: 1,
-    max_tokens: 4000
+    model: "text-davinci-003", // Modelo GPT a ser usado
+    prompt: clientText, // Texto enviado pelo usuário
+    temperature: 1, // Nível de variação das respostas geradas, 1 é o máximo
+    max_tokens: 4000 // Quantidade de tokens (palavras) a serem retornadas pelo bot, 4000 é o máximo
   };
 
   try {
@@ -70,14 +71,15 @@ const getDavinciResponse = async (clientText: string): Promise<string> => {
   }
 };
 
+// gera a url da imagem
 const getDalleResponse = async (
   clientText: string
 ): Promise<string | undefined> => {
   const options: CreateImageRequest = {
-    prompt: clientText,
-    n: 1,
+    prompt: clientText, // Descrição da imagem
+    n: 1, // Número de imagens a serem geradas
     // eslint-disable-next-line no-underscore-dangle
-    size: CreateImageRequestSizeEnum._1024x1024
+    size: CreateImageRequestSizeEnum._1024x1024 // Tamanho da imagem
   };
 
   try {
@@ -91,28 +93,22 @@ const getDalleResponse = async (
 const sessions: Session[] = [];
 
 const syncUnreadMessages = async (wbot: Session) => {
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    const chats = await wbot.getChats();
-    console.log(`Total de chats carregados: ${chats.length}`);
+  const chats = await wbot.getChats();
 
-    /* eslint-disable no-restricted-syntax */
-    /* eslint-disable no-await-in-loop */
-    for (const chat of chats) {
-      if (chat.unreadCount > 0) {
-        const unreadMessages = await chat.fetchMessages({
-          limit: chat.unreadCount
-        });
+  /* eslint-disable no-restricted-syntax */
+  /* eslint-disable no-await-in-loop */
+  for (const chat of chats) {
+    if (chat.unreadCount > 0) {
+      const unreadMessages = await chat.fetchMessages({
+        limit: chat.unreadCount
+      });
 
-        for (const msg of unreadMessages) {
-          await handleMessage(msg, wbot);
-        }
-
-        await chat.sendSeen();
+      for (const msg of unreadMessages) {
+        await handleMessage(msg, wbot);
       }
+
+      await chat.sendSeen();
     }
-  } catch (error) {
-    console.error("Erro ao carregar os chats:", error);
   }
 };
 
@@ -133,21 +129,22 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         authStrategy: new LocalAuth({ clientId: `bd_${whatsapp.id}` }),
         puppeteer: {
           args: [
-            "--no-sandbox", // Desativa a sandbox de segurança
-            "--disable-setuid-sandbox", // Desativa setuid
-            "--disable-dev-shm-usage", // Usa disco em vez de /dev/shm
-            // "--single-process", // Força um único processo
-            "--log-level=3", // Reduz a verbosidade dos logs
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--log-level=3",
             "--no-default-browser-check",
             "--disable-site-isolation-trials",
             "--no-experiments",
             "--ignore-gpu-blacklist",
             "--ignore-certificate-errors",
             "--ignore-certificate-errors-spki-list",
-            "--disable-gpu", // Desativa a GPU (não necessária em headless)
+            "--disable-gpu",
             "--disable-extensions",
             "--disable-default-apps",
             "--enable-features=NetworkService",
+            "--disable-setuid-sandbox",
+            "--no-sandbox",
             "--disable-webgl",
             "--disable-threaded-animation",
             "--disable-threaded-scrolling",
@@ -162,14 +159,12 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
             "--disable-accelerated-mjpeg-decode",
             "--disable-app-list-dismiss-on-blur",
             "--disable-accelerated-video-decode",
-            "--disable-background-timer-throttling", // Reduz o uso de timers em segundo plano
-            "--disable-features=IsolateOrigins,site-per-process", // Otimiza o isolamento de sites
-            // "--renderer-process-limit=2", // Limita o número de processos de renderização
+            "--disable-background-timer-throttling",
+            "--disable-features=IsolateOrigins,site-per-process"
           ],
-          executablePath: process.env.CHROME_BIN || undefined,
-        },
+          executablePath: process.env.CHROME_BIN || undefined
+        }
       });
-      
 
       wbot.initialize();
 
@@ -186,13 +181,13 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
 
         io.emit("whatsappSession", {
           action: "update",
-          session: whatsapp,
-          number: ""
+          session: whatsapp
         });
       });
 
       wbot.on("authenticated", async session => {
         logger.info(`Session: ${sessionName} AUTHENTICATED`);
+
       });
 
       wbot.on("auth_failure", async msg => {
@@ -207,8 +202,7 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         const retry = whatsapp.retries;
         await whatsapp.update({
           status: "DISCONNECTED",
-          retries: retry + 1,
-          number: ""
+          retries: retry + 1
         });
 
         io.emit("whatsappSession", {
@@ -248,7 +242,7 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
 
       wbot.on("message", async msg => {
         const msgChatGPT: string = msg.body;
-
+        // mensagem de texto
         if (msgChatGPT.includes("/gpt ")) {
           const index = msgChatGPT.indexOf(" ");
           const question = msgChatGPT.substring(index + 1);
@@ -256,7 +250,7 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
             wbot.sendMessage(msg.from, response);
           });
         }
-
+        // imagem
         if (msgChatGPT.includes("/gptM ")) {
           const index = msgChatGPT.indexOf(" ");
           const imgDescription = msgChatGPT.substring(index + 1);
@@ -293,77 +287,5 @@ export const removeWbot = (whatsappId: number): void => {
     }
   } catch (err: any) {
     logger.error(err);
-  }
-};
-
-export const restartWbot = async (whatsappId: number): Promise<Session> => {
-  const sessionIndex = sessions.findIndex(s => s.id === whatsappId);
-  if (sessionIndex !== -1) {
-    const whatsapp = await Whatsapp.findByPk(whatsappId);
-    if (!whatsapp) {
-      throw new AppError("WhatsApp not found.");
-    }
-    sessions[sessionIndex].destroy();
-    sessions.splice(sessionIndex, 1);
-
-    const newSession = await initWbot(whatsapp);
-    return newSession;
-  }
-  throw new AppError("WhatsApp session not initialized.");
-};
-
-export const shutdownWbot = async (whatsappId: string): Promise<void> => {
-  const whatsappIDNumber: number = parseInt(whatsappId, 10);
-
-  if (Number.isNaN(whatsappIDNumber)) {
-    throw new AppError("Invalid WhatsApp ID format.");
-  }
-
-  const whatsapp = await Whatsapp.findByPk(whatsappIDNumber);
-  if (!whatsapp) {
-    throw new AppError("WhatsApp not found.");
-  }
-
-  const sessionIndex = sessions.findIndex(s => s.id === whatsappIDNumber);
-  if (sessionIndex === -1) {
-    console.warn(`Sessão com ID ${whatsappIDNumber} não foi encontrada.`);
-    throw new AppError("WhatsApp session not initialized.");
-  }
-
-  const sessionPath = path.resolve(
-    __dirname,
-    `../../.wwebjs_auth/session-bd_${whatsappIDNumber}`
-  );
-
-  try {
-    console.log(`Desligando sessão para WhatsApp ID: ${whatsappIDNumber}`);
-    await sessions[sessionIndex].destroy();
-    console.log(`Sessão com ID ${whatsappIDNumber} desligada com sucesso.`);
-
-    console.log(`Removendo arquivos da sessão: ${sessionPath}`);
-    await fs.rm(sessionPath, { recursive: true, force: true });
-    console.log(`Arquivos da sessão removidos com sucesso: ${sessionPath}`);
-
-    sessions.splice(sessionIndex, 1);
-    console.log(
-      `Sessão com ID ${whatsappIDNumber} removida da lista de sessões.`
-    );
-    const retry = whatsapp.retries;
-    await whatsapp.update({
-      status: "DISCONNECTED",
-      qrcode: "",
-      session: "",
-      retries: retry + 1,
-      number: ""
-    });
-
-    StartWhatsAppSession(whatsapp);
-    
-  } catch (error) {
-    console.error(
-      `Erro ao desligar ou limpar a sessão com ID ${whatsappIDNumber}:`,
-      error
-    );
-    throw new AppError("Failed to destroy WhatsApp session.");
   }
 };

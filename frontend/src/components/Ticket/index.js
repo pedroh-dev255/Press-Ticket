@@ -1,19 +1,21 @@
-import { Paper, makeStyles } from "@material-ui/core";
-import clsx from "clsx";
-import React, { useEffect, useState } from "react";
-import { useHistory, useParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useHistory } from "react-router-dom";
+
 import { toast } from "react-toastify";
-import { EditMessageProvider } from "../../context/EditingMessage/EditingMessageContext";
-import { ReplyMessageProvider } from "../../context/ReplyingMessage/ReplyingMessageContext";
-import toastError from "../../errors/toastError";
-import api from "../../services/api";
 import openSocket from "../../services/socket-io";
+import clsx from "clsx";
+
+import { Paper, makeStyles } from "@material-ui/core";
+
 import ContactDrawer from "../ContactDrawer";
 import MessageInput from "../MessageInput/";
-import MessagesList from "../MessagesList";
-import TicketActionButtons from "../TicketActionButtons";
 import TicketHeader from "../TicketHeader";
 import TicketInfo from "../TicketInfo";
+import TicketActionButtons from "../TicketActionButtons";
+import MessagesList from "../MessagesList";
+import api from "../../services/api";
+import { ReplyMessageProvider } from "../../context/ReplyingMessage/ReplyingMessageContext";
+import toastError from "../../errors/toastError";
 
 const drawerWidth = 320;
 
@@ -25,6 +27,7 @@ const useStyles = makeStyles((theme) => ({
     position: "relative",
     overflow: "hidden",
   },
+
   ticketInfo: {
     backgroundColor: theme.palette.background.default,
     maxWidth: "50%",
@@ -45,6 +48,7 @@ const useStyles = makeStyles((theme) => ({
       marginBottom: "5px",
     },
   },
+
   mainWrapper: {
     flex: 1,
     height: "100%",
@@ -60,6 +64,7 @@ const useStyles = makeStyles((theme) => ({
       duration: theme.transitions.duration.leavingScreen,
     }),
   },
+
   mainWrapperShift: {
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
@@ -162,13 +167,11 @@ const Ticket = () => {
           </div>
         </TicketHeader>
         <ReplyMessageProvider>
-          <EditMessageProvider>
-            <MessagesList
-              ticketId={ticketId}
-              isGroup={ticket.isGroup}
-            ></MessagesList>
-            <MessageInput ticketStatus={ticket.status} />
-          </EditMessageProvider>
+          <MessagesList
+            ticketId={ticketId}
+            isGroup={ticket.isGroup}
+          ></MessagesList>
+          <MessageInput ticketStatus={ticket.status} ownerUser={ticket.userId} />
         </ReplyMessageProvider>
       </Paper>
       <ContactDrawer

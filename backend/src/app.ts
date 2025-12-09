@@ -5,18 +5,14 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import * as Sentry from "@sentry/node";
-import { logger } from "./utils/logger";
-import updateLastActivity from "./middleware/updateLastActivity";
 
 import "./database";
 import uploadConfig from "./config/upload";
 import AppError from "./errors/AppError";
-import openApiRoutes from "./routes/openApiRoutes";
 import routes from "./routes";
+import { logger } from "./utils/logger";
 
-if (process.env.NODE_ENV === "production") {
-  Sentry.init({ dsn: process.env.SENTRY_DSN });
-}
+Sentry.init({ dsn: process.env.SENTRY_DSN });
 
 const app = express();
 
@@ -26,26 +22,20 @@ app.use(
     origin: process.env.FRONTEND_URL
   })
 );
-
 app.use(cookieParser());
 app.use(express.json());
 app.use(Sentry.Handlers.requestHandler());
-
-const openApiCorsOptions = {
-  credentials: true,
-  origin: "*",
-  allowedHeaders: ["Content-Type", "Authorization", "x-api-token"],
-};
-
-app.use("/v1", cors(openApiCorsOptions), openApiRoutes);
-
 app.use("/public", express.static(uploadConfig.directory));
 app.use(routes);
-app.use(updateLastActivity);
+
+
+app.get("/healthcheck", (req: Request, res: Response) => {
+  res.status(200).json({ status: "API is running" });
+});
 
 app.use(Sentry.Handlers.errorHandler());
 
-app.use(async (err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use(async (err: Error, req: Request, res: Response, _: NextFunction) => {
   if (err instanceof AppError) {
     logger.warn(err);
     return res.status(err.statusCode).json({ error: err.message });

@@ -1,37 +1,32 @@
-import {
+import React, { useContext, useEffect, useState } from "react";
+
+import { 
   Badge,
   Button,
   FormControlLabel,
   makeStyles,
   Paper,
-  Switch,
   Tab,
   Tabs,
-  Tooltip,
-  Menu,
-  MenuItem
+  Switch
 } from "@material-ui/core";
+
 import {
-  AddCircleOutline,
-  CheckCircle,
-  HighlightOffRounded,
+  AllInboxRounded,
   HourglassEmptyRounded,
   MoveToInbox,
   Search
 } from "@material-ui/icons";
-import React, { useContext, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { AuthContext } from "../../context/Auth/AuthContext";
-import { Can } from "../Can";
+
 import NewTicketModal from "../NewTicketModal";
-import TabPanel from "../TabPanel";
 import TicketsList from "../TicketsList";
+import TabPanel from "../TabPanel";
+import { TagsFilter } from "../TagsFilter";
+import { Can } from "../Can";
 import TicketsQueueSelect from "../TicketsQueueSelect";
-import toastError from "../../errors/toastError";
-import useTickets from "../../hooks/useTickets";
-import api from "../../services/api";
-import { toast } from "react-toastify";
-import ConfirmationModal from "../ConfirmationModal";
+
+import { i18n } from "../../translate/i18n";
+import { AuthContext } from "../../context/Auth/AuthContext";
 
 const useStyles = makeStyles((theme) => ({
   ticketsWrapper: {
@@ -43,19 +38,23 @@ const useStyles = makeStyles((theme) => ({
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
   },
+
   tabsHeader: {
     flex: "none",
     backgroundColor: theme.palette.background.default,
   },
+
   settingsIcon: {
     alignSelf: "center",
     marginLeft: "auto",
     padding: 8,
   },
+
   tab: {
     minWidth: 120,
     width: 120,
   },
+
   ticketOptionsBox: {
     display: "flex",
     justifyContent: "space-between",
@@ -63,6 +62,7 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: theme.palette.background.paper,
     padding: theme.spacing(1),
   },
+
   serachInputWrapper: {
     flex: 1,
     backgroundColor: theme.palette.background.default,
@@ -71,12 +71,14 @@ const useStyles = makeStyles((theme) => ({
     padding: 4,
     marginRight: theme.spacing(1),
   },
+
   searchIcon: {
     color: theme.palette.primary.main,
     marginLeft: 6,
     marginRight: 6,
     alignSelf: "center",
   },
+
   searchInput: {
     flex: 1,
     border: "none",
@@ -84,6 +86,7 @@ const useStyles = makeStyles((theme) => ({
     padding: "10px",
     outline: "none",
   },
+
   badge: {
     right: 0,
   },
@@ -98,103 +101,35 @@ const useStyles = makeStyles((theme) => ({
     padding: "10px",
     borderBottom: "2px solid rgba(0, 0, 0, .12)",
   },
-  selectFilter: {
-    minWidth: 120,
-    margin: theme.spacing(1),
-    "& .MuiOutlinedInput-root": {
-      "& fieldset": {
-        borderColor: theme.palette.primary.main,
-      },
-      "&:hover fieldset": {
-        borderColor: theme.palette.primary.dark,
-      },
-    },
-    "& .MuiSelect-select": {
-      padding: theme.spacing(1),
-    },
-  },
 }));
 
 const TicketsManager = () => {
   const classes = useStyles();
-  const { t } = useTranslation();
+
   const [searchParam, setSearchParam] = useState("");
   const [tab, setTab] = useState("open");
   const [tabOpen] = useState("open");
   const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
   const [showAllTickets, setShowAllTickets] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [confirmationOpen, setConfirmationOpen] = useState(false);
-  const [closeAction, setCloseAction] = useState(null);
   const { user } = useContext(AuthContext);
-  const [, setOpenCount] = useState(0);
+
+  const [openCount, setOpenCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [selectedTags, setSelectedTags] = useState([]);
+
   const userQueueIds = user.queues.map((q) => q.id);
-  const [settings, setSettings] = useState([]);
   const [selectedQueueIds, setSelectedQueueIds] = useState(userQueueIds || []);
-  const [previousCounts, setPreviousCounts] = useState({
-    inAttendance: 0,
-    waiting: 0,
-    closed: 0,
-  });
-
-  const ticketsInAttendance = useTickets({
-    status: "open",
-    showAll: showAllTickets,
-    withUnreadMessages: "false",
-    queueIds: JSON.stringify(userQueueIds),
-  });
-
-  const ticketsWaiting = useTickets({
-    status: "pending",
-    showAll: "true",
-    withUnreadMessages: "false",
-    queueIds: JSON.stringify(userQueueIds),
-  });
-
-  const ticketsClosed = useTickets({
-    status: "closed",
-    showAll: "true",
-    withUnreadMessages: "false",
-    queueIds: JSON.stringify(userQueueIds),
-  });
-
-  useEffect(() => {
-    if (
-      ticketsInAttendance.count !== previousCounts.inAttendance ||
-      ticketsWaiting.count !== previousCounts.waiting ||
-      ticketsClosed.count !== previousCounts.closed
-    ) {
-      setPreviousCounts({
-        inAttendance: ticketsInAttendance.count,
-        waiting: ticketsWaiting.count,
-        closed: ticketsClosed.count,
-      });
-    }
-  }, [ticketsInAttendance.count, ticketsWaiting.count, ticketsClosed.count, previousCounts]);
 
   useEffect(() => {
     if (user.profile.toUpperCase() === "ADMIN") {
       setShowAllTickets(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const { data } = await api.get("/settings");
-        setSettings(data);
-      } catch (err) {
-        console.error(err);
-        toastError(err);
-        setSettings([]);
-      }
-    };
-    fetchSettings();
-  }, []);
+  }, [])
 
   const handleSearch = (e) => {
     const searchedTerm = e.target.value.toLowerCase();
+
 
     setSearchParam(searchedTerm);
     if (searchedTerm === "") {
@@ -204,6 +139,11 @@ const TicketsManager = () => {
     }
 
   };
+
+  const handleSelectedTags = (selecteds) => {
+    const tags = selecteds.map(t => t.id);
+    setSelectedTags(tags);
+  }
 
   const handleChangeTab = (e, newValue) => {
     setTab(newValue);
@@ -215,89 +155,17 @@ const TicketsManager = () => {
     }
   };
 
-  const handleCloseTickets = async (status) => {
-    try {
-      const { data } = await api.put(`/tickets/close-all?status=${status}`);
-      setAnchorEl(null);
-      
-      if (status === "open") {
-        setTab(tab => tab === "open" ? "pending" : "open");
-        setTimeout(() => setTab("open"), 100);
-      } else if (status === "pending") {
-        setTab(tab => tab === "pending" ? "open" : "pending");
-        setTimeout(() => setTab("pending"), 100);
-      } else if (status === "all") {
-        setTab(tab => tab === "open" ? "pending" : "open");
-        setTimeout(() => setTab("open"), 100);
-      }
-
-      setPreviousCounts({
-        inAttendance: ticketsInAttendance.count,
-        waiting: ticketsWaiting.count,
-        closed: ticketsClosed.count,
-      });
-
-      toast.success(
-        t("tickets.notifications.closed.success") + 
-        (data.count ? ` (${data.count} ${t("tickets.notifications.closed.tickets")})` : "")
-      );
-    } catch (err) {
-      console.error(err);
-      toast.error(
-        err.response?.data?.error || 
-        t("tickets.notifications.closed.error")
-      );
-    }
-  };
-
-  const handleOpenConfirmation = (status) => {
-    setCloseAction(status);
-    setConfirmationOpen(true);
-    setAnchorEl(null);
-  };
-
-  const handleConfirmClose = async () => {
-    await handleCloseTickets(closeAction);
-    setConfirmationOpen(false);
-    setCloseAction(null);
-  };
-
-  const canTabsSettings = (ts) => {
-    return (
-      (settings && settings.some(s => s.key === ts && s.value === "enabled")) ||
-      (user && user.profile === "admin")
-    );
-  };
-
   return (
     <Paper elevation={0} variant="outlined" className={classes.ticketsWrapper}>
       <NewTicketModal
         modalOpen={newTicketModalOpen}
         onClose={(e) => setNewTicketModalOpen(false)}
       />
-      <ConfirmationModal
-        title={
-          closeAction === "all"
-            ? t("ticketsManager.confirmationModal.closeAllTitle")
-            : closeAction === "open"
-            ? t("ticketsManager.confirmationModal.closeOpenTitle")
-            : t("ticketsManager.confirmationModal.closePendingTitle")
-        }
-        open={confirmationOpen}
-        onClose={() => setConfirmationOpen(false)}
-        onConfirm={handleConfirmClose}
-      >
-        {closeAction === "all"
-          ? t("ticketsManager.confirmationModal.closeAllMessage")
-          : closeAction === "open"
-          ? t("ticketsManager.confirmationModal.closeOpenMessage")
-          : t("ticketsManager.confirmationModal.closePendingMessage")}
-      </ConfirmationModal>
       <Paper elevation={0} square className={classes.searchContainer}>
         <Search className={classes.searchIcon} />
         <input
           type="text"
-          placeholder={t("tickets.search.placeholder")}
+          placeholder={i18n.t("tickets.search.placeholder")}
           className={classes.searchInput}
           value={searchParam}
           onChange={handleSearch}
@@ -311,99 +179,61 @@ const TicketsManager = () => {
           indicatorColor="primary"
           textColor="primary"
           aria-label="icon label tabs example"
-        >          
+        >
           <Tab
             value={"open"}
-            icon={
+            icon={<MoveToInbox />}
+            label={
               <Badge
                 className={classes.badge}
-                badgeContent={previousCounts.inAttendance}
+                badgeContent={openCount}
                 overlap="rectangular"
                 max={9999}
                 color="secondary"
               >
-                <Tooltip title={t("tickets.tabs.open.title")} placement="top" arrow>
-                  <MoveToInbox className={classes.tabIcon}/>
-                </Tooltip>
+                {i18n.t("tickets.tabs.open.title")}
               </Badge>
             }
             classes={{ root: classes.tab }}
-          /> 
-          {canTabsSettings("tabsPending") && (         
-            <Tab
-              value={"pending"}
-              icon={
-                <Badge
-                  className={classes.badge}
-                  badgeContent={previousCounts.waiting}
-                  overlap="rectangular"
-                  max={9999}
-                  color="secondary"
-                >
-                  <Tooltip title={t("tickets.tabs.pending.title")} placement="top" arrow>
-                    <HourglassEmptyRounded className={classes.tabIcon}/>
-                  </Tooltip>
-                </Badge>
-              }
-              classes={{ root: classes.tab }}
-            />
-          )}
-          {canTabsSettings("tabsClosed") && (
-            <Tab
-              value={"closed"}
-              icon={
-                <Badge
-                  className={classes.badge}
-                  badgeContent={previousCounts.closed}
-                  overlap="rectangular"
-                  max={9999}
-                  color="secondary"
-                >
-                  <Tooltip title={t("tickets.tabs.closed.title")} placement="top" arrow>
-                    <CheckCircle className={classes.tabIcon} />
-                  </Tooltip>
-                </Badge>
-              }  
-              classes={{ root: classes.tab }}
-            />
-          )}
-        </Tabs>  
+          />
+          <Tab
+            value={"pending"}
+            icon={<HourglassEmptyRounded />}
+            label={
+              <Badge
+                className={classes.badge}
+                badgeContent={pendingCount}
+                overlap="rectangular"
+                max={9999}
+                color="secondary"
+              >
+                {i18n.t("ticketsList.pendingHeader")}
+              </Badge>
+            }
+            classes={{ root: classes.tab }}
+          />
+          <Tab
+            value={"closed"}
+            icon={<AllInboxRounded />}
+            label={i18n.t("tickets.tabs.closed.title")}
+            classes={{ root: classes.tab }}
+          />
+        </Tabs>
       </Paper>
       <Paper square elevation={0} className={classes.ticketOptionsBox}>
-        <Tooltip title={t("ticketsManager.buttons.newTicket")} placement="top" arrow>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => setNewTicketModalOpen(true)}
-          >
-            <AddCircleOutline className={classes.tabIcon}/>
-          </Button>
-        </Tooltip>
-        <Tooltip title={t("ticketsManager.buttons.closed")} placement="top" arrow>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={(event) => setAnchorEl(event.currentTarget)}
-          >
-            <HighlightOffRounded className={classes.tabIcon}/>
-          </Button>
-        </Tooltip>
-        <Menu
-          anchorEl={anchorEl}
-          keepMounted
-          open={Boolean(anchorEl)}
-          onClose={() => setAnchorEl(null)}
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={() => setNewTicketModalOpen(true)}
         >
-          <MenuItem onClick={() => handleOpenConfirmation("all")}>{t("ticketsManager.menu.all")}</MenuItem>
-          <MenuItem onClick={() => handleOpenConfirmation("open")}>{t("ticketsManager.menu.open")}</MenuItem>
-          <MenuItem onClick={() => handleOpenConfirmation("pending")}>{t("ticketsManager.menu.pending")}</MenuItem>
-        </Menu>
+          {i18n.t("ticketsManager.buttons.newTicket")}
+        </Button>
         <Can
           role={user.profile}
           perform="tickets-manager:showall"
           yes={() => (
             <FormControlLabel
-              label={t("tickets.buttons.showAll")}
+              label={i18n.t("tickets.buttons.showAll")}
               labelPlacement="start"
               control={
                 <Switch
@@ -427,6 +257,7 @@ const TicketsManager = () => {
         />
       </Paper>
       <TabPanel value={tab} name="open" className={classes.ticketsWrapper}>
+      <TagsFilter onFiltered={handleSelectedTags} />
         <Paper className={classes.ticketsWrapper}>
           <TicketsList
             status="open"
@@ -435,16 +266,28 @@ const TicketsManager = () => {
             updateCount={(val) => setOpenCount(val)}
             style={applyPanelStyle("open")}
           />
+          <TicketsList
+            status="pending"
+            selectedQueueIds={selectedQueueIds}
+            updateCount={(val) => setPendingCount(val)}
+            style={applyPanelStyle("pending")}
+          />
         </Paper>
       </TabPanel>
+
       <TabPanel value={tab} name="pending" className={classes.ticketsWrapper}>
+      <TagsFilter onFiltered={handleSelectedTags} />
         <TicketsList
           status="pending"
           showAll={true}
           selectedQueueIds={selectedQueueIds}
         />
       </TabPanel>
+
+
+
       <TabPanel value={tab} name="closed" className={classes.ticketsWrapper}>
+      <TagsFilter onFiltered={handleSelectedTags} />
         <TicketsList
           status="closed"
           showAll={true}
@@ -452,9 +295,11 @@ const TicketsManager = () => {
         />
       </TabPanel>
       <TabPanel value={tab} name="search" className={classes.ticketsWrapper}>
+      <TagsFilter onFiltered={handleSelectedTags} />
         <TicketsList
           searchParam={searchParam}
-          showAll={true}
+          tags={selectedTags}
+          showAll={showAllTickets}
           selectedQueueIds={selectedQueueIds}
         />
       </TabPanel>

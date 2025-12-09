@@ -1,15 +1,15 @@
 import {
-  AutoIncrement,
-  BelongsTo,
+  Table,
   Column,
   CreatedAt,
-  Default,
-  ForeignKey,
-  HasMany,
+  UpdatedAt,
   Model,
   PrimaryKey,
-  Table,
-  UpdatedAt
+  ForeignKey,
+  BelongsTo,
+  HasMany,
+  AutoIncrement,
+  Default
 } from "sequelize-typescript";
 
 import Contact from "./Contact";
@@ -48,10 +48,7 @@ class Ticket extends Model<Ticket> {
   @Column
   userId: number;
 
-  @BelongsTo(() => User, {
-    onDelete: "CASCADE",
-    onUpdate: "CASCADE"
-  })
+  @BelongsTo(() => User)
   user: User;
 
   @ForeignKey(() => Contact)
@@ -72,10 +69,7 @@ class Ticket extends Model<Ticket> {
   @Column
   queueId: number;
 
-  @BelongsTo(() => Queue, {
-    onDelete: "SET NULL",
-    onUpdate: "CASCADE"
-  })
+  @BelongsTo(() => Queue)
   queue: Queue;
 
   @HasMany(() => Message)

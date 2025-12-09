@@ -13,6 +13,5 @@ tagRoutes.get("/tags/:tagId", isAuth, TagController.show);
 tagRoutes.delete("/tags/:tagId", isAuth, TagController.remove);
 tagRoutes.delete("/tags", isAuth, TagController.removeAll);
 tagRoutes.post("/tags/sync", isAuth, TagController.syncTags);
-tagRoutes.get("/tags-with-count", TagController.indexCount);
 
 export default tagRoutes;

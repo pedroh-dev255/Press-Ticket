@@ -1,10 +1,10 @@
-import { Op } from "sequelize";
 import * as Yup from "yup";
+import { Op } from "sequelize";
 
 import AppError from "../../errors/AppError";
 import Whatsapp from "../../models/Whatsapp";
-import AssociateWhatsappQueue from "./AssociateWhatsappQueue";
 import ShowWhatsAppService from "./ShowWhatsAppService";
+import AssociateWhatsappQueue from "./AssociateWhatsappQueue";
 
 interface WhatsappData {
   name?: string;
@@ -15,7 +15,6 @@ interface WhatsappData {
   farewellMessage?: string;
   queueIds?: number[];
   isDisplay?: boolean;
-  color?: string;
 }
 
 interface Request {
@@ -46,8 +45,7 @@ const UpdateWhatsAppService = async ({
     greetingMessage,
     farewellMessage,
     isDisplay,
-    queueIds = [],
-    color
+    queueIds = []
   } = whatsappData;
 
   try {
@@ -80,8 +78,7 @@ const UpdateWhatsAppService = async ({
     greetingMessage,
     farewellMessage,
     isDefault,
-    isDisplay,
-    color
+    isDisplay
   });
 
   await AssociateWhatsappQueue(whatsapp, queueIds);

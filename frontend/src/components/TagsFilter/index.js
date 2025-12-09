@@ -4,33 +4,26 @@ import React, { useEffect, useState } from "react";
 import toastError from "../../errors/toastError";
 import api from "../../services/api";
 
-const TagsFilter = ({ onFiltered }) => {
+export function TagsFilter ({ onFiltered }) {
 
     const [tags, setTags] = useState([]);
     const [selecteds, setSelecteds] = useState([]);
 
     useEffect(() => {
-        let isMounted = true;
-
-        async function fetchData() {
-            try {
-                const { data } = await api.get(`/tags/list`);
-                if (isMounted) {
-                    setTags(data);
-                }
-            } catch (err) {
-                if (isMounted) {
-                    toastError(err);
-                }
-            }
+        async function fetchData () {
+            await loadTags();
         }
-
         fetchData();
-
-        return () => {
-            isMounted = false;
-        };
     }, []);
+
+    const loadTags = async () => {
+        try {
+            const { data } = await api.get(`/tags/list`);
+            setTags(data);
+        } catch (err) {
+            toastError(err);
+        }
+    }
 
     const onChange = async (value) => {
         setSelecteds(value);
@@ -38,7 +31,7 @@ const TagsFilter = ({ onFiltered }) => {
     }
 
     return (
-        <Paper style={{ padding: 10 }}>
+        <Paper style={{padding: 10}}>
             <Autocomplete
                 multiple
                 size="small"
@@ -50,7 +43,7 @@ const TagsFilter = ({ onFiltered }) => {
                     value.map((option, index) => (
                         <Chip
                             variant="outlined"
-                            style={{ backgroundColor: option.color || '#eee', textShadow: '1px 1px 1px #000', color: 'white' }}
+                            style={{backgroundColor: option.color || '#eee', textShadow: '1px 1px 1px #000', color: 'white'}}
                             label={option.name}
                             {...getTagProps({ index })}
                             size="small"
@@ -64,5 +57,3 @@ const TagsFilter = ({ onFiltered }) => {
         </Paper>
     )
 }
-
-export default TagsFilter;

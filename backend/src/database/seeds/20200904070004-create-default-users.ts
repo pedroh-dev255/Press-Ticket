@@ -6,9 +6,9 @@ module.exports = {
       "Users",
       [
         {
-          name: "Press-Ticket",
-          email: "admin@pressticket.com.br",
-          passwordHash: "$2a$08$WaEmpmFDD/XkDqorkpQ42eUZozOqRCPkPcTkmHHMyuTGUOkI8dHsq",
+          name: "Pedro",
+          email: "henriquepedro1912@gmail.com",
+          passwordHash: "$2a$08$VX5b1o.7CAHgV./XlBguruTLIH7YR987OaWaMK1RRkMnNn9VBgmca",
           profile: "admin",
           tokenVersion: 0,
           createdAt: new Date(),

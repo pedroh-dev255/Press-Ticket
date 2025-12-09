@@ -1,8 +1,8 @@
+import Ticket from "../../models/Ticket";
 import AppError from "../../errors/AppError";
 import Contact from "../../models/Contact";
-import Queue from "../../models/Queue";
-import Ticket from "../../models/Ticket";
 import User from "../../models/User";
+import Queue from "../../models/Queue";
 import Whatsapp from "../../models/Whatsapp";
 
 const ShowTicketService = async (id: string | number): Promise<Ticket> => {
@@ -11,24 +11,13 @@ const ShowTicketService = async (id: string | number): Promise<Ticket> => {
       {
         model: Contact,
         as: "contact",
-        attributes: [
-          "id",
-          "name",
-          "number",
-          "address",
-          "email",
-          "profilePicUrl",
-          "messengerId",
-          "instagramId",
-          "telegramId",
-          "webchatId"
-        ],
+        attributes: ["id", "name", "number", "email", "profilePicUrl"],
         include: ["extraInfo", "tags"]
       },
       {
         model: User,
         as: "user",
-        attributes: ["id", "name", "online"]
+        attributes: ["id", "name"]
       },
       {
         model: Queue,
@@ -38,7 +27,7 @@ const ShowTicketService = async (id: string | number): Promise<Ticket> => {
       {
         model: Whatsapp,
         as: "whatsapp",
-        attributes: ["name", "type", "color"]
+        attributes: ["name"]
       }
     ]
   });

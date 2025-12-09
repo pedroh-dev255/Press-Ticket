@@ -1,8 +1,7 @@
-import { makeStyles } from "@material-ui/core";
-import PropTypes from "prop-types";
 import React from "react";
+import { makeStyles } from "@material-ui/core";
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(theme => ({
   tag: {
     padding: "1px 5px",
     borderRadius: "3px",
@@ -12,28 +11,17 @@ const useStyles = makeStyles((theme) => ({
     marginRight: "5px",
     marginBottom: "3px",
     whiteSpace: "nowrap",
-    backgroundColor: (props) => props.backgroundColor || "#000",
-  },
+  }
 }));
 
 const ContactTag = ({ tag }) => {
-  const classes = useStyles({ backgroundColor: tag.color });
+  const classes = useStyles();
 
   return (
-    <div
-      className={classes.tag}
-      aria-label={`Tag: ${tag.name}`}
-    >
-      {tag.name?.toUpperCase() || "UNKNOWN"}
+    <div className={classes.tag} style={{ backgroundColor: tag.color }}>
+      {tag.name.toUpperCase()}
     </div>
-  );
-};
-
-ContactTag.propTypes = {
-  tag: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    color: PropTypes.string,
-  }).isRequired,
-};
+  )
+}
 
 export default ContactTag;

@@ -18,7 +18,7 @@ const ListQuickAnswerService = async ({
 }: Request): Promise<Response> => {
   const whereCondition = {
     message: Sequelize.where(
-      Sequelize.fn("LOWER", Sequelize.col("shortcut")),
+      Sequelize.fn("LOWER", Sequelize.col("message")),
       "LIKE",
       `%${searchParam.toLowerCase().trim()}%`
     )
@@ -28,7 +28,7 @@ const ListQuickAnswerService = async ({
 
   const { count, rows: quickAnswers } = await QuickAnswer.findAndCountAll({
     where: whereCondition,
-    // limit,
+    limit,
     offset,
     order: [["message", "ASC"]]
   });

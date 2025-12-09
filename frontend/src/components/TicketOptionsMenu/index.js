@@ -1,16 +1,17 @@
-import Menu from "@material-ui/core/Menu";
-import MenuItem from "@material-ui/core/MenuItem";
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { AuthContext } from "../../context/Auth/AuthContext";
-import toastError from "../../errors/toastError";
+
+import MenuItem from "@material-ui/core/MenuItem";
+import Menu from "@material-ui/core/Menu";
+
+import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
-import { Can } from "../Can";
 import ConfirmationModal from "../ConfirmationModal";
 import TransferTicketModal from "../TransferTicketModal";
+import toastError from "../../errors/toastError";
+import { Can } from "../Can";
+import { AuthContext } from "../../context/Auth/AuthContext";
 
 const TicketOptionsMenu = ({ ticket, menuOpen, handleClose, anchorEl }) => {
-	const { t } = useTranslation();
 	const [confirmationOpen, setConfirmationOpen] = useState(false);
 	const [transferTicketModalOpen, setTransferTicketModalOpen] = useState(false);
 	const isMounted = useRef(true);
@@ -65,27 +66,29 @@ const TicketOptionsMenu = ({ ticket, menuOpen, handleClose, anchorEl }) => {
 				onClose={handleClose}
 			>
 				<MenuItem onClick={handleOpenTransferModal}>
-					{t("ticketOptionsMenu.transfer")}
+					{i18n.t("ticketOptionsMenu.transfer")}
 				</MenuItem>
 				<Can
 					role={user.profile}
 					perform="ticket-options:deleteTicket"
 					yes={() => (
 						<MenuItem onClick={handleOpenConfirmationModal}>
-							{t("ticketOptionsMenu.delete")}
+							{i18n.t("ticketOptionsMenu.delete")}
 						</MenuItem>
 					)}
 				/>
 			</Menu>
 			<ConfirmationModal
-				title={`${t("ticketOptionsMenu.confirmationModal.title")}${ticket.id
-					} ${t("ticketOptionsMenu.confirmationModal.titleFrom")} ${ticket.contact.name
-					}?`}
+				title={`${i18n.t("ticketOptionsMenu.confirmationModal.title")}${
+					ticket.id
+				} ${i18n.t("ticketOptionsMenu.confirmationModal.titleFrom")} ${
+					ticket.contact.name
+				}?`}
 				open={confirmationOpen}
 				onClose={setConfirmationOpen}
 				onConfirm={handleDeleteTicket}
 			>
-				{t("ticketOptionsMenu.confirmationModal.message")}
+				{i18n.t("ticketOptionsMenu.confirmationModal.message")}
 			</ConfirmationModal>
 			<TransferTicketModal
 				modalOpen={transferTicketModalOpen}

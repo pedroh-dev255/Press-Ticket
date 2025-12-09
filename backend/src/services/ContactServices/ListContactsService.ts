@@ -1,6 +1,8 @@
-import { Filterable, Includeable, Op, Sequelize } from "sequelize";
+import { Sequelize, Op, Filterable, Includeable } from "sequelize";
+import { intersection } from "lodash";
 import Contact from "../../models/Contact";
 import Tag from "../../models/Tag";
+import ContactTag from "../../models/ContactTag";
 
 interface Request {
   searchParam?: string;
@@ -19,21 +21,19 @@ const ListContactsService = async ({
   pageNumber = "1",
   tags
 }: Request): Promise<Response> => {
-  const whereCondition: any = {
+  let whereCondition: Filterable["where"] = {
     [Op.or]: [
       {
         name: Sequelize.where(
-          Sequelize.fn("LOWER", Sequelize.col("Contact.name")),
+          Sequelize.fn("LOWER", Sequelize.col("name")),
           "LIKE",
           `%${searchParam.toLowerCase().trim()}%`
         )
       },
-      {
-        number: { [Op.like]: `%${searchParam.toLowerCase().trim()}%` }
-      },
+      { number: { [Op.like]: `%${searchParam.toLowerCase().trim()}%` } },
       {
         email: Sequelize.where(
-          Sequelize.fn("LOWER", Sequelize.col("Contact.email")),
+          Sequelize.fn("LOWER", Sequelize.col("email")),
           "LIKE",
           `%${searchParam.toLowerCase().trim()}%`
         )
@@ -41,33 +41,38 @@ const ListContactsService = async ({
     ]
   };
 
-  const includeCondition: Includeable[] = [
+  let includeCondition: Includeable[];
+  includeCondition = [
     {
       model: Tag,
       as: "tags",
       attributes: ["id", "name", "color"]
     }
   ];
-  
+
   if (Array.isArray(tags) && tags.length > 0) {
-    includeCondition[0] = {
-      model: Tag,
-      as: "tags",
-      required: true,
-      where: {
-        id: { [Op.in]: tags }
-      },
-      attributes: ["id", "name", "color"],
-      through: { attributes: [] }
+    const contactsTagFilter = [];
+    for (const tag of tags) {
+      const contactTags = await ContactTag.findAll({ where: { tagId: tag } });
+      if (contactTags) {
+        contactsTagFilter.push(contactTags.map(t => t.contactId));
+      }
+    }
+
+    const contactsIntersection: number[] = intersection(...contactsTagFilter);
+
+    whereCondition = {
+      id: {
+        [Op.in]: contactsIntersection
+      }
     };
   }
 
-  const limit = 20;
+  const limit = 200;
   const offset = limit * (+pageNumber - 1);
 
   const { count, rows: contacts } = await Contact.findAndCountAll({
     where: whereCondition,
-    include: includeCondition,
     limit,
     offset,
     order: [["name", "ASC"]]

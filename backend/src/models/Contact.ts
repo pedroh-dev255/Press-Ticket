@@ -13,9 +13,9 @@ import {
   UpdatedAt
 } from "sequelize-typescript";
 import ContactCustomField from "./ContactCustomField";
-import ContactTag from "./ContactTag";
-import Tag from "./Tag";
 import Ticket from "./Ticket";
+import Tag from "./Tag";
+import ContactTag from "./ContactTag";
 
 @Table
 class Contact extends Model<Contact> {
@@ -27,17 +27,12 @@ class Contact extends Model<Contact> {
   @Column
   name: string;
 
-  @AllowNull(true)
+  @AllowNull(false)
   @Unique
   @Column
   number: string;
 
-  @AllowNull(true)
-  @Default("")
-  @Column
-  address: string;
-
-  @AllowNull(true)
+  @AllowNull(false)
   @Default("")
   @Column
   email: string;
@@ -58,23 +53,14 @@ class Contact extends Model<Contact> {
   @HasMany(() => Ticket)
   tickets: Ticket[];
 
-  @Column
-  messengerId: string;
-
-  @Column
-  instagramId: string;
-
-  @Column
-  telegramId: string;
-
-  @Column
-  webchatId: string;
-
-  @BelongsToMany(() => Tag, () => ContactTag)
-  tags: Array<Tag & { ContactTag: ContactTag }>;
-
   @HasMany(() => ContactCustomField)
   extraInfo: ContactCustomField[];
+
+  @HasMany(() => ContactTag)
+  contactTags: ContactTag[];
+
+  @BelongsToMany(() => Tag, () => ContactTag)
+  tags: Tag[];
 }
 
 export default Contact;

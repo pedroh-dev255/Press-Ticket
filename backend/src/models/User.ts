@@ -1,23 +1,24 @@
-import { compare, hash } from "bcryptjs";
 import {
-  AutoIncrement,
-  BeforeCreate,
-  BeforeUpdate,
-  BelongsToMany,
+  Table,
   Column,
   CreatedAt,
+  UpdatedAt,
+  Model,
   DataType,
+  BeforeCreate,
+  BeforeUpdate,
+  PrimaryKey,
+  AutoIncrement,
   Default,
   HasMany,
-  Model,
-  PrimaryKey,
-  Table,
-  UpdatedAt
+  BelongsToMany,
+  ForeignKey,
+  BelongsTo
 } from "sequelize-typescript";
-import Queue from "./Queue";
+import { hash, compare } from "bcryptjs";
 import Ticket from "./Ticket";
+import Queue from "./Queue";
 import UserQueue from "./UserQueue";
-import UserWhatsapp from "./UserWhatsapp";
 import Whatsapp from "./Whatsapp";
 
 @Table
@@ -39,25 +40,24 @@ class User extends Model<User> {
   @Column
   passwordHash: string;
 
+  @Default(0)
+  @Column
+  tokenVersion: number;
+
   @Default("admin")
   @Column
   profile: string;
 
-  @Default(true)
+  @Default("enabled")
   @Column
-  active: boolean;
+  isTricked: string;
 
-  @Default(false)
+  @ForeignKey(() => Whatsapp)
   @Column
-  online: boolean;
+  whatsappId: number;
 
-  @Default(false)
-  @Column
-  isTricked: boolean;
-
-  @Default(0)
-  @Column
-  tokenVersion: number;
+  @BelongsTo(() => Whatsapp)
+  whatsapp: Whatsapp;
 
   @Default("00:00")
   @Column
@@ -66,18 +66,6 @@ class User extends Model<User> {
   @Default("23:59")
   @Column
   endWork: string;
-
-  @Column(DataType.STRING)
-  passwordResetToken: string | null;
-
-  @Column(DataType.DATE)
-  passwordResetExpires: Date | null;
-
-  @Column(DataType.STRING)
-  currentSessionId: string;
-
-  @Column(DataType.DATE)
-  lastLoginAt: Date;
 
   @CreatedAt
   createdAt: Date;
@@ -91,9 +79,6 @@ class User extends Model<User> {
   @BelongsToMany(() => Queue, () => UserQueue)
   queues: Queue[];
 
-  @BelongsToMany(() => Whatsapp, () => UserWhatsapp)
-  whatsapps: Whatsapp[];
-
   @BeforeUpdate
   @BeforeCreate
   static hashPassword = async (instance: User): Promise<void> => {
@@ -103,7 +88,7 @@ class User extends Model<User> {
   };
 
   public checkPassword = async (password: string): Promise<boolean> => {
-    return compare(password, this.passwordHash);
+    return compare(password, this.getDataValue("passwordHash"));
   };
 }
 

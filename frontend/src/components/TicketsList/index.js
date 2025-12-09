@@ -1,18 +1,21 @@
+import React, { useState, useEffect, useReducer, useContext } from "react";
+import openSocket from "../../services/socket-io";
+
 import {
 	List,
 	makeStyles,
 	Paper
 } from "@material-ui/core";
-import React, { useContext, useEffect, useReducer, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { AuthContext } from "../../context/Auth/AuthContext";
-import toastError from "../../errors/toastError";
-import useTickets from "../../hooks/useTickets";
-import api from "../../services/api";
-import openSocket from "../../services/socket-io";
-import TagsFilter from "../TagsFilter";
+
 import TicketListItem from "../TicketListItem";
 import TicketsListSkeleton from "../TicketsListSkeleton";
+
+import useTickets from "../../hooks/useTickets";
+import { i18n } from "../../translate/i18n";
+import { AuthContext } from "../../context/Auth/AuthContext";
+
+import api from "../../services/api";
+import toastError from "../../errors/toastError";
 
 const useStyles = makeStyles((theme) => ({
 	ticketsListWrapper: {
@@ -24,12 +27,14 @@ const useStyles = makeStyles((theme) => ({
 		borderTopRightRadius: 0,
 		borderBottomRightRadius: 0,
 	},
+
 	ticketsList: {
 		flex: 1,
 		overflowY: "scroll",
 		...theme.scrollbarStyles,
 		borderTop: "2px solid rgba(0, 0, 0, 0.12)",
 	},
+
 	ticketsListHeader: {
 		color: "rgb(67, 83, 105)",
 		zIndex: 2,
@@ -39,24 +44,28 @@ const useStyles = makeStyles((theme) => ({
 		alignItems: "center",
 		justifyContent: "space-between",
 	},
+
 	ticketsCount: {
 		fontWeight: "normal",
 		color: "rgb(104, 121, 146)",
 		marginLeft: "8px",
 		fontSize: "14px",
 	},
+
 	noTicketsText: {
 		textAlign: "center",
 		color: "rgb(104, 121, 146)",
 		fontSize: "14px",
 		lineHeight: "1.4",
 	},
+
 	noTicketsTitle: {
 		textAlign: "center",
 		fontSize: "16px",
 		fontWeight: "600",
 		margin: "0px",
 	},
+
 	noTicketsDiv: {
 		display: "flex",
 		height: "100px",
@@ -159,17 +168,11 @@ const TicketsList = (props) => {
 		tags,
 	} = props;
 	const classes = useStyles();
-	const { t } = useTranslation();
 	const [pageNumber, setPageNumber] = useState(1);
 	const [ticketsList, dispatch] = useReducer(reducer, []);
 	const { user } = useContext(AuthContext);
 	const { profile, queues } = user;
 	const [settings, setSettings] = useState([]);
-	const [filteredTags, setFilteredTags] = useState([]);
-
-	const handleTagFilter = (tags) => {
-		setFilteredTags(tags);
-	};
 
 	useEffect(() => {
 		dispatch({ type: "RESET" });
@@ -208,7 +211,7 @@ const TicketsList = (props) => {
 		const allticket = settings && settings.length > 0 && getSettingValue("allTicket") === "enabled";
 
 		if (allticket === true) {
-
+			
 			if (profile === "") {
 				dispatch({ type: "LOAD_TICKETS", payload: filteredTickets });
 
@@ -216,7 +219,7 @@ const TicketsList = (props) => {
 				dispatch({ type: "LOAD_TICKETS", payload: tickets });
 			}
 		} else {
-
+			
 			if (profile === "user") {
 				dispatch({ type: "LOAD_TICKETS", payload: filteredTickets });
 
@@ -288,9 +291,6 @@ const TicketsList = (props) => {
 		});
 
 		return () => {
-			socket.off("ticket");
-			socket.off("appMessage");
-			socket.off("contact");
 			socket.disconnect();
 		};
 	}, [status, showAll, user, selectedQueueIds]);
@@ -318,7 +318,6 @@ const TicketsList = (props) => {
 
 	return (
 		<Paper className={classes.ticketsListWrapper} style={style}>
-			<TagsFilter onFiltered={handleTagFilter} />
 			<Paper
 				square
 				name="closed"
@@ -330,16 +329,16 @@ const TicketsList = (props) => {
 					{ticketsList.length === 0 && !loading ? (
 						<div className={classes.noTicketsDiv}>
 							<span className={classes.noTicketsTitle}>
-								{t("ticketsList.noTicketsTitle")}
+								{i18n.t("ticketsList.noTicketsTitle")}
 							</span>
 							<p className={classes.noTicketsText}>
-								{t("ticketsList.noTicketsMessage")}
+								{i18n.t("ticketsList.noTicketsMessage")}
 							</p>
 						</div>
 					) : (
 						<>
 							{ticketsList.map((ticket) => (
-								<TicketListItem key={ticket.id} ticket={ticket} filteredTags={filteredTags} />
+								<TicketListItem ticket={ticket} key={ticket.id} />
 							))}
 						</>
 					)}

@@ -11,7 +11,7 @@ const ShowWhatsAppService = async (id: string | number): Promise<Whatsapp> => {
         attributes: ["id", "name", "color", "greetingMessage", "startWork", "endWork", "absenceMessage"]
       }
     ],
-    order: [["queues", "name", "ASC"]]
+    order: [["queues", "id", "ASC"]]
   });
 
   if (!whatsapp) {

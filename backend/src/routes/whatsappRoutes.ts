@@ -1,6 +1,7 @@
 import express from "express";
-import * as WhatsAppController from "../controllers/WhatsAppController";
 import isAuth from "../middleware/isAuth";
+
+import * as WhatsAppController from "../controllers/WhatsAppController";
 
 const whatsappRoutes = express.Router();
 
@@ -16,18 +17,6 @@ whatsappRoutes.delete(
   "/whatsapp/:whatsappId",
   isAuth,
   WhatsAppController.remove
-);
-
-whatsappRoutes.post(
-  "/whatsapp/:whatsappId/restart",
-  isAuth,
-  WhatsAppController.restart
-);
-
-whatsappRoutes.post(
-  "/whatsapp/:whatsappId/shutdown",
-  isAuth,
-  WhatsAppController.shutdown
 );
 
 export default whatsappRoutes;

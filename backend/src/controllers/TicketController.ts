@@ -1,12 +1,6 @@
 import { Request, Response } from "express";
-import { Op } from "sequelize";
-import formatBody from "../helpers/Mustache";
 import { getIO } from "../libs/socket";
-import Contact from "../models/Contact";
-import Ticket from "../models/Ticket";
-import ShowQueueService from "../services/QueueService/ShowQueueService";
-import CheckOpenTicketsService from "../services/TicketServices/CheckOpenTicketsService";
-import CloseTicketsService from "../services/TicketServices/CloseTicketsService";
+
 import CreateTicketService from "../services/TicketServices/CreateTicketService";
 import DeleteTicketService from "../services/TicketServices/DeleteTicketService";
 import ListTicketsService from "../services/TicketServices/ListTicketsService";
@@ -14,17 +8,20 @@ import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import UpdateTicketService from "../services/TicketServices/UpdateTicketService";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
+import ShowQueueService from "../services/QueueService/ShowQueueService";
+import ShowUserService from "../services/UserServices/ShowUserService";
+import formatBody from "../helpers/Mustache";
+import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
+
 
 type IndexQuery = {
   searchParam: string;
   pageNumber: string;
   status: string;
-  startDate?: string;
-  endDate?: string;
+  date: string;
   showAll: string;
   withUnreadMessages: string;
   queueIds: string;
-  all?: string;
 };
 
 interface TicketData {
@@ -39,44 +36,30 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   const {
     pageNumber,
     status,
-    startDate,
-    endDate,
+    date,
     searchParam,
     showAll,
     queueIds: queueIdsStringified,
-    withUnreadMessages,
-    all
+    withUnreadMessages
   } = req.query as IndexQuery;
 
   const userId = req.user.id;
-  const isAdmin = req.user.profile === "admin";
 
   let queueIds: number[] = [];
 
   if (queueIdsStringified) {
-    try {
-      // Garantir que queueIds seja um array
-      queueIds = Array.isArray(queueIdsStringified)
-        ? queueIdsStringified.map(Number)
-        : JSON.parse(queueIdsStringified);
-    } catch (error) {
-      console.error("Erro ao fazer JSON.parse:", error.message);
-      return res.status(400).json({ error: "Invalid JSON format for queueIds" });
-    }
+    queueIds = JSON.parse(queueIdsStringified);
   }
 
   const { tickets, count, hasMore } = await ListTicketsService({
     searchParam,
     pageNumber,
     status,
-    startDate,
-    endDate,
+    date,
     showAll,
-    isAdmin,
     userId,
     queueIds,
-    withUnreadMessages,
-    all
+    withUnreadMessages
   });
 
   return res.status(200).json({ tickets, count, hasMore });
@@ -116,15 +99,32 @@ export const update = async (
   const { ticketId } = req.params;
   const ticketData: TicketData = req.body;
 
-  const { ticket } = await UpdateTicketService({
-    ticketData,
-    ticketId
-  });
+  // Obter o antigo atendente
+  const ticketShow = await ShowTicketService(ticketId);
 
-  if (ticketData.transf) {
-    const { greetingMessage } = await ShowQueueService(ticketData.queueId);
-    if (greetingMessage) {
-      const msgtxt = formatBody(`\u200e${greetingMessage}`);
+  // Atualiza o ticket para os parametros novos (usuario, fila...)
+  const { ticket } = await UpdateTicketService({ ticketData, ticketId });
+
+  const settingsTransfTicket = await ListSettingsServiceOne({key:"transferTicket"});
+  const transfTickets = (JSON.stringify("enabled"));
+
+
+  if ((JSON.stringify(settingsTransfTicket?.value)) === transfTickets && ticketData.transf) {
+    if (ticketShow.userId !== ticketData.userId && ticketShow.queueId === ticketData.queueId) {
+      // const nomeAntigo = await ShowUserService(ticketShow.userId);
+      const nome = await ShowUserService(ticketData.userId);
+      const msgtxt = "*Mensagem Automática*:\nVocê foi transferido(a) para o atendente *" + nome.name + "*\nAguarde um momento, iremos atende-lo(a)!";
+      await SendWhatsAppMessage({ body: msgtxt, ticket });
+    } else
+    if (ticketData.userId) {
+      const { name } = await ShowQueueService(ticketData.queueId);
+      const nome = await ShowUserService(ticketData.userId);
+      const msgtxt = "*Mensagem Automática*:\nVocê foi transferido(a) para o departamento *" + name + "* e será atendido por *" + nome.name + "*\nAguarde um momento, iremos atende-lo(a)!";
+      await SendWhatsAppMessage({ body: msgtxt, ticket });
+    }
+    else {
+      const { name } = await ShowQueueService(ticketData.queueId);
+      const msgtxt = "*Mensagem Automática*:\nVocê foi transferido(a) para o departamento *" + name + "*\nAguarde um momento, iremos atende-lo(a)!";;
       await SendWhatsAppMessage({ body: msgtxt, ticket });
     }
   }
@@ -154,107 +154,13 @@ export const remove = async (
   const ticket = await DeleteTicketService(ticketId);
 
   const io = getIO();
-  io.to(ticket.status).to(ticketId).to("notification").emit("ticket", {
-    action: "delete",
-    ticketId: +ticketId
-  });
+  io.to(ticket.status)
+    .to(ticketId)
+    .to("notification")
+    .emit("ticket", {
+      action: "delete",
+      ticketId: +ticketId
+    });
 
   return res.status(200).json({ message: "ticket deleted" });
-};
-
-export const checkOpenTickets = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
-  const { contactId } = req.params;
-
-  try {
-    const contactIdNumber = parseInt(contactId, 10);
-
-    if (Number.isNaN(contactIdNumber)) {
-      return res.status(400).json({ error: "Invalid contactId" });
-    }
-
-    const openTicket = await CheckOpenTicketsService(contactIdNumber);
-
-    if (openTicket) {
-      return res.status(200).json({
-        hasOpenTicket: true,
-        ticket: {
-          id: openTicket.id,
-          status: openTicket.status,
-          user: openTicket.user
-            ? {
-                id: openTicket.user.id,
-                name: openTicket.user.name
-              }
-            : null
-        }
-      });
-    }
-
-    return res.status(200).json({ hasOpenTicket: false });
-  } catch (err) {
-    console.error("Erro ao verificar tickets abertos:", err.message);
-    return res
-      .status(500)
-      .json({ error: "Erro ao verificar tickets abertos." });
-  }
-};
-
-export const closeTickets = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
-  const { status } = req.query;
-  const userId = parseInt(req.user.id);
-
-  try {
-    let whereCondition = {};
-
-    if (status === "open") {
-      whereCondition = { status: "open" };
-    } else if (status === "pending") {
-      whereCondition = { status: "pending" };
-    } else if (status === "all") {
-      whereCondition = {
-        status: {
-          [Op.or]: ["open", "pending"]
-        }
-      };
-    }
-
-    const tickets = await Ticket.findAll({
-      where: whereCondition,
-      include: [
-        {
-          model: Contact,
-          as: "contact"
-        }
-      ]
-    });
-
-    if (!tickets.length) {
-      return res.status(400).json({ error: "No tickets found to close" });
-    }
-
-    await CloseTicketsService({
-      status: "closed",
-      userId,
-      tickets
-    });
-
-    const io = getIO();
-    io.emit("ticket:update", {
-      action: "update",
-      tickets: tickets.map(ticket => ticket.id)
-    });
-
-    return res.status(200).json({
-      message: "Tickets closed successfully",
-      count: tickets.length
-    });
-  } catch (err) {
-    return res.status(400).json({ error: err.message });
-  }
 };

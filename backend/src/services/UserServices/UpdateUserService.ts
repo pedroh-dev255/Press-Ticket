@@ -8,14 +8,12 @@ interface UserData {
   email?: string;
   password?: string;
   name?: string;
-  online?: boolean;
   profile?: string;
   isTricked?: boolean;
   queueIds?: number[];
-  whatsappIds?: number[];
+  whatsappId?: number;
   startWork?: string;
   endWork?: string;
-  active?: boolean;
 }
 
 interface Request {
@@ -28,7 +26,6 @@ interface Response {
   name: string;
   email: string;
   profile: string;
-  online?: boolean;
 }
 
 const UpdateUserService = async ({
@@ -41,8 +38,7 @@ const UpdateUserService = async ({
     name: Yup.string().min(2),
     email: Yup.string().email(),
     profile: Yup.string(),
-    password: Yup.string(),
-    online: Yup.boolean(),
+    password: Yup.string()
   });
 
   const {
@@ -52,15 +48,13 @@ const UpdateUserService = async ({
     isTricked,
     name,
     queueIds = [],
-    whatsappIds = [],
+    whatsappId,
     startWork,
-    endWork,
-    online,
-    active
+    endWork
   } = userData;
 
   try {
-    await schema.validate({ email, password, profile, name, online });
+    await schema.validate({ email, password, profile, name });
   } catch (err) {
     throw new AppError(err.message);
   }
@@ -71,14 +65,12 @@ const UpdateUserService = async ({
     profile,
     isTricked,
     name,
+    whatsappId: whatsappId || null,
     startWork,
-    endWork,
-    online,
-    active
+    endWork
   });
 
   await user.$set("queues", queueIds);
-  await user.$set("whatsapps", whatsappIds);
 
   await user.reload();
 

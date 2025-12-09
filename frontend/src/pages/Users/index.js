@@ -1,10 +1,12 @@
+import React, { useState, useEffect, useReducer } from "react";
+import { toast } from "react-toastify";
+import openSocket from "../../services/socket-io";
+import { makeStyles } from "@material-ui/core/styles";
+
 import {
-  Backdrop,
   Button,
-  Fade,
   IconButton,
   InputAdornment,
-  Modal,
   Paper,
   Table,
   TableBody,
@@ -14,32 +16,24 @@ import {
   TextField,
   Tooltip
 } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core/styles";
+
 import {
   AddCircleOutline,
-  CheckCircleOutline,
   DeleteOutline,
   Edit,
-  HighlightOff,
-  Info,
-  Lock,
-  LockOpen,
   Search
 } from "@material-ui/icons";
-import React, { useEffect, useReducer, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { useHistory, useLocation } from "react-router-dom";
-import { toast } from "react-toastify";
-import ConfirmationModal from "../../components/ConfirmationModal";
+
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";
 import MainHeaderButtonsWrapper from "../../components/MainHeaderButtonsWrapper";
-import TableRowSkeleton from "../../components/TableRowSkeleton";
 import Title from "../../components/Title";
+import TableRowSkeleton from "../../components/TableRowSkeleton";
 import UserModal from "../../components/UserModal";
-import toastError from "../../errors/toastError";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import api from "../../services/api";
-import openSocket from "../../services/socket-io";
+import { i18n } from "../../translate/i18n";
+import toastError from "../../errors/toastError";
 
 const reducer = (state, action) => {
   if (action.type === "LOAD_USERS") {
@@ -70,17 +64,6 @@ const reducer = (state, action) => {
     }
   }
 
-  if (action.type === "UPDATE_USER_STATUS") {
-    const { userId, online } = action.payload;
-    const userIndex = state.findIndex((u) => u.id === userId);
-
-    if (userIndex !== -1) {
-      state[userIndex] = { ...state[userIndex], online };
-      return [...state];
-    }
-    return state;
-  }
-
   if (action.type === "DELETE_USER") {
     const userId = action.payload;
 
@@ -104,49 +87,25 @@ const useStyles = makeStyles((theme) => ({
     overflowY: "scroll",
     ...theme.scrollbarStyles,
   },
-  modalPaper: {
-    backgroundColor: "white",
-    padding: theme.spacing(2),
-    borderRadius: "8px",
-    boxShadow: theme.shadows[5],
-    width: "400px",
-    maxHeight: "80%",
-    overflowY: "auto",
-  },
-  queuesColor: {
-    flex: "none",
-    width: "8px",
-    height: "100%",
-    position: "absolute",
-    top: "0%",
-    left: "0%",
-  },
 }));
 
 const Users = () => {
   const classes = useStyles();
-  const { t } = useTranslation();
-  const history = useHistory();
-  const location = useLocation();
-  const user = location.state?.user;
+
   const [loading, setLoading] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [searchParam, setSearchParam] = useState("");
-  const [users, dispatch] = useReducer(reducer, []);
-  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [showOnlyActive] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState([]);
-  const [modalTitle, setModalTitle] = useState("");
+  const [searchParam, setSearchParam] = useState("");
+  const [users, dispatch] = useReducer(reducer, []);
 
   useEffect(() => {
     dispatch({ type: "RESET" });
     setPageNumber(1);
-  }, [searchParam, showOnlyActive]);
+  }, [searchParam]);
 
   useEffect(() => {
     setLoading(true);
@@ -154,7 +113,7 @@ const Users = () => {
       const fetchUsers = async () => {
         try {
           const { data } = await api.get("/users/", {
-            params: { searchParam, pageNumber, showOnlyActive },
+            params: { searchParam, pageNumber },
           });
           dispatch({ type: "LOAD_USERS", payload: data.users });
           setHasMore(data.hasMore);
@@ -166,7 +125,7 @@ const Users = () => {
       fetchUsers();
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [searchParam, pageNumber, showOnlyActive]);
+  }, [searchParam, pageNumber]);
 
   useEffect(() => {
     const socket = openSocket();
@@ -181,32 +140,18 @@ const Users = () => {
       }
     });
 
-    socket.on("userSessionUpdate", (data) => {
-      dispatch({ type: "UPDATE_USER_STATUS", payload: data });
-    });
-
-    socket.on("userSessionExpired", (data) => {
-      if (data.userId === user?.id) {
-        localStorage.removeItem("token");
-        toast.error(data.message || "Sua sessão foi encerrada.");
-        setTimeout(() => {
-          history.push("/login");
-        }, 1000);
-      }
-    });
-
     return () => {
       socket.disconnect();
     };
-  }, [history, user]);
+  }, []);
 
   const handleOpenUserModal = () => {
-    setSelectedUsers([]);
+    setSelectedUser(null);
     setUserModalOpen(true);
   };
 
   const handleCloseUserModal = () => {
-    setSelectedUsers([]);
+    setSelectedUser(null);
     setUserModalOpen(false);
   };
 
@@ -214,31 +159,21 @@ const Users = () => {
     setSearchParam(event.target.value.toLowerCase());
   };
 
-  const handleEditUser = (userId) => {
-    setSelectedUsers([userId]);
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
     setUserModalOpen(true);
   };
 
-  const handleDeleteUser = async (user) => {
+  const handleDeleteUser = async (userId) => {
     try {
-      await api.delete(`/users/${user.id}`);
-      toast.success(t("users.toasts.deleted"));
+      await api.delete(`/users/${userId}`);
+      toast.success(i18n.t("users.toasts.deleted"));
     } catch (err) {
       toastError(err);
     }
     setDeletingUser(null);
     setSearchParam("");
     setPageNumber(1);
-  };
-
-  const handleToggleActive = async (user) => {
-    try {
-      await api.put(`/users/${user.id}`, { active: !user.active });
-      dispatch({ type: "UPDATE_USERS", payload: { ...user, active: !user.active } });
-      toast.success(t("users.toasts.updated"));
-    } catch (err) {
-      toastError(err);
-    }
   };
 
   const loadMore = () => {
@@ -253,80 +188,31 @@ const Users = () => {
     }
   };
 
-  const handleOpenModal = (content, title) => {
-    setModalContent(content);
-    setModalTitle(title);
-    setModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalContent([]);
-    setModalOpen(false);
-  };
-
   return (
     <MainContainer>
-      <Modal
-        open={modalOpen}
-        onClose={handleCloseModal}
-        BackdropComponent={Backdrop}
-        BackdropProps={{ timeout: 500 }}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
-      >
-        <Fade in={modalOpen}>
-          <div className={classes.modalPaper}>
-            <h2>{modalTitle}</h2>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>{t("users.modalTable.id")}</TableCell>
-                  <TableCell>{t("users.modalTable.name")}</TableCell>
-                  {modalTitle === t("users.modalTitle.channel") && (
-                    <TableCell>{t("users.modalTable.type")}</TableCell>
-                  )}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {modalContent.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell style={{ padding: 0, width: "5px", position: "relative" }}>
-                      <div style={{ backgroundColor: item.color, width: "5px", height: "100%", position: "absolute", top: 0, left: 0 }}></div>
-                      <div style={{ paddingLeft: "20px" }}>{item.id}</div>
-                    </TableCell>
-                    <TableCell>{item.name}</TableCell>
-                    {modalTitle === t("users.modalTitle.channel") && (
-                      <TableCell>{item.type === null ? "wwebjs" : item.type}</TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </Fade>
-      </Modal>
       <ConfirmationModal
         title={
           deletingUser &&
-          `${t("users.confirmationModal.deleteTitle")} ${deletingUser.name
+          `${i18n.t("users.confirmationModal.deleteTitle")} ${deletingUser.name
           }?`
         }
         open={confirmModalOpen}
         onClose={setConfirmModalOpen}
-        onConfirm={() => handleDeleteUser(deletingUser)}
+        onConfirm={() => handleDeleteUser(deletingUser.id)}
       >
-        {t("users.confirmationModal.deleteMessage")}
+        {i18n.t("users.confirmationModal.deleteMessage")}
       </ConfirmationModal>
       <UserModal
         open={userModalOpen}
         onClose={handleCloseUserModal}
         aria-labelledby="form-dialog-title"
-        userId={selectedUsers.length === 1 ? selectedUsers[0] : null}
+        userId={selectedUser && selectedUser.id}
       />
       <MainHeader>
-        <Title>{t("users.title")} ({users.length})</Title>
+        <Title>{i18n.t("users.title")} ({users.length})</Title>
         <MainHeaderButtonsWrapper>
           <TextField
-            placeholder={t("contacts.searchPlaceholder")}
+            placeholder={i18n.t("contacts.searchPlaceholder")}
             type="search"
             value={searchParam}
             onChange={handleSearch}
@@ -338,7 +224,7 @@ const Users = () => {
               ),
             }}
           />
-          <Tooltip title={t("users.buttons.add")}>
+          <Tooltip title={i18n.t("users.buttons.add")}>
             <Button
               variant="contained"
               color="primary"
@@ -358,108 +244,64 @@ const Users = () => {
           <TableHead>
             <TableRow>
               <TableCell align="center">
-                {t("users.table.id")}
+                {i18n.t("users.table.id")}
               </TableCell>
               <TableCell align="center">
-                {t("users.table.name")}
+                {i18n.t("users.table.name")}
               </TableCell>
               <TableCell align="center">
-                {t("users.table.status")}
+                {i18n.t("users.table.email")}
               </TableCell>
               <TableCell align="center">
-                {t("users.table.email")}
+                {i18n.t("users.table.profile")}
               </TableCell>
               <TableCell align="center">
-                {t("users.table.profile")}
+                {i18n.t("users.table.whatsapp")}
               </TableCell>
               <TableCell align="center">
-                {t("users.table.whatsapp")}
+                {i18n.t("users.table.startWork")}
               </TableCell>
               <TableCell align="center">
-                {t("users.table.queue")}
+                {i18n.t("users.table.endWork")}
               </TableCell>
               <TableCell align="center">
-                {t("users.table.startWork")}
-              </TableCell>
-              <TableCell align="center">
-                {t("users.table.endWork")}
-              </TableCell>
-              <TableCell align="center">
-                {t("users.table.actions")}
+                {i18n.t("users.table.actions")}
               </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {loading ? (
-              <TableRowSkeleton columns={10} />
-            ) : (
-              <>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell align="center">{user.id}</TableCell>
-                    <TableCell align="center">{user.name}</TableCell>
-                    <TableCell align="center">
-                      <Tooltip title={user.online ? t("users.status.online") : t("users.status.offline")} arrow>
-                        {user.online ? (
-                          <CheckCircleOutline style={{ color: "green" }} />
-                        ) : (
-                          <HighlightOff style={{ color: "red" }} />
-                        )}
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell align="center">{user.email}</TableCell>
-                    <TableCell align="center">{user.profile}</TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenModal(user.whatsapps, t("users.modalTitle.channel"))}
-                      >
-                        <Info color="secondary" />
-                      </IconButton>
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenModal(user.queues, t("users.modalTitle.queue"))}
-                      >
-                        <Info color="secondary" />
-                      </IconButton>
-                    </TableCell>
-                    <TableCell align="center">{user.startWork}</TableCell>
-                    <TableCell align="center">{user.endWork}</TableCell>
-                    <TableCell align="center">
-                      <Tooltip title={user.active ? t("users.actions.activate") : t("users.actions.deactivate")} arrow>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleToggleActive(user)}
-                        >
-                          {user.active ? <LockOpen color="secondary" /> : <Lock color="secondary" />}
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title={t("users.actions.edit")} arrow>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditUser(user.id)}
-                        >
-                          <Edit color="secondary" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title={t("users.actions.delete")} arrow>
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            setConfirmModalOpen(true);
-                            setDeletingUser(user);
-                          }}
-                        >
-                          <DeleteOutline color="secondary" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </>
-            )}
+            <>
+              {users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell align="center">{user.id}</TableCell>
+                  <TableCell align="center">{user.name}</TableCell>
+                  <TableCell align="center">{user.email}</TableCell>
+                  <TableCell align="center">{user.profile}</TableCell>
+                  <TableCell align="center">{user.whatsapp?.name}</TableCell>
+                  <TableCell align="center">{user.startWork}</TableCell>
+                  <TableCell align="center">{user.endWork}</TableCell>
+                  <TableCell align="center">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditUser(user)}
+                    >
+                      <Edit color="secondary" />
+                    </IconButton>
+
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        setConfirmModalOpen(true);
+                        setDeletingUser(user);
+                      }}
+                    >
+                      <DeleteOutline color="secondary" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {loading && <TableRowSkeleton columns={8} />}
+            </>
           </TableBody>
         </Table>
       </Paper>

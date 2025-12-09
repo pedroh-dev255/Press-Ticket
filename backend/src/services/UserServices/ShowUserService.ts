@@ -1,30 +1,26 @@
+import User from "../../models/User";
 import AppError from "../../errors/AppError";
 import Queue from "../../models/Queue";
-import User from "../../models/User";
 import Whatsapp from "../../models/Whatsapp";
 
 const ShowUserService = async (id: string | number): Promise<User> => {
   const user = await User.findByPk(id, {
     attributes: [
-      "id",
       "name",
-      "online",
+      "id",
       "email",
       "profile",
       "isTricked",
       "tokenVersion",
+      "whatsappId",
       "startWork",
-      "endWork",
-      "active"
+      "endWork"
     ],
     include: [
       { model: Queue, as: "queues", attributes: ["id", "name", "color"] },
-      { model: Whatsapp, as: "whatsapps", attributes: ["id", "name", "color"] }
+      { model: Whatsapp, as: "whatsapp", attributes: ["id", "name"] }
     ],
-    order: [
-      [{ model: Queue, as: "queues" }, "name", "asc"],
-      [{ model: Whatsapp, as: "whatsapps" }, "name", "asc"]
-    ]
+    order: [[{ model: Queue, as: "queues" }, "name", "asc"]]
   });
   if (!user) {
     throw new AppError("ERR_NO_USER_FOUND", 404);

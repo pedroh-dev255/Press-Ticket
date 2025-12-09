@@ -1,22 +1,31 @@
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useRef
+} from "react";
+import { useParams } from "react-router-dom";
+import "emoji-mart/css/emoji-mart.css";
+import { Picker } from "emoji-mart";
 import {
-  Avatar,
   CircularProgress,
   ClickAwayListener,
-  FormControlLabel,
-  Grid,
-  Hidden,
   IconButton,
   InputBase,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
   makeStyles,
+  Paper,
+  FormControlLabel,
+  Hidden,
   Menu,
   MenuItem,
-  Paper,
   Switch,
-  Typography
+  Grid,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar
 } from "@material-ui/core";
 import { green } from "@material-ui/core/colors";
 import {
@@ -24,34 +33,19 @@ import {
   Cancel,
   CheckCircleOutline,
   Clear,
-  Code,
-  FormatListBulleted,
-  FormatListNumbered,
-  FormatQuote,
   HighlightOff,
   Mic,
   Mood,
   MoreVert,
   Send
 } from "@material-ui/icons";
-import clsx from "clsx";
-import { Picker } from "emoji-mart";
-import "emoji-mart/css/emoji-mart.css";
 import MicRecorder from "mic-recorder-to-mp3";
-import PropTypes from "prop-types";
-import React, {
-  useContext,
-  useEffect,
-  useRef,
-  useState
-} from "react";
-import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
-import { AuthContext } from "../../context/Auth/AuthContext";
-import { EditMessageContext } from "../../context/EditingMessage/EditingMessageContext";
+import clsx from "clsx";
 import { ReplyMessageContext } from "../../context/ReplyingMessage/ReplyingMessageContext";
-import toastError from "../../errors/toastError";
+import { AuthContext } from "../../context/Auth/AuthContext";
+import { i18n } from "../../translate/i18n";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
+import toastError from "../../errors/toastError";
 import api from "../../services/api";
 import RecordingTimer from "./RecordingTimer";
 
@@ -88,14 +82,6 @@ const useStyles = makeStyles((theme) => ({
   dropInfoOut: {
     display: "none",
   },
-  formatMenu: {
-    backgroundColor: theme.palette.background.paper,
-    borderRadius: 30,
-    boxShadow: theme.shadows[2],
-    padding: '4px 8px',
-    display: 'flex',
-    alignItems: 'center',
-  },
   gridFiles: {
     maxHeight: "100%",
     overflow: "scroll",
@@ -116,11 +102,10 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     position: "relative",
   },
-  
-  messageInputField: {
-    flex: 1,
-    width: "100%",
+  messageInput: {
     paddingLeft: 10,
+    flex: 1,
+    border: "none"
   },
   sendMessageIcons: {
     color: theme.palette.text.primary,
@@ -210,21 +195,19 @@ const useStyles = makeStyles((theme) => ({
   messageQuickAnswersWrapper: {
     margin: 0,
     position: "absolute",
-    bottom: "55px",
+    bottom: "50px",
     background: theme.palette.background.default,
     padding: 0,
     border: "none",
     left: 0,
     width: "100%",
-    maxHeight: "350px",
-    overflowY: "auto",
     "& li": {
       listStyle: "none",
       "& a": {
         display: "block",
         padding: "8px",
         textOverflow: "ellipsis",
-        overflowY: "hidden",
+        overflow: "hidden",
         maxHeight: "30px",
         "&:hover": {
           background: theme.palette.background.paper,
@@ -235,7 +218,7 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-const MessageInput = ({ ticketStatus }) => {
+const MessageInput = ({ ticketStatus, ownerUser}) => {
   const classes = useStyles();
   const { ticketId } = useParams();
   const [medias, setMedias] = useState([]);
@@ -249,62 +232,18 @@ const MessageInput = ({ ticketStatus }) => {
   const [onDragEnter, setOnDragEnter] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const { setReplyingMessage, replyingMessage } = useContext(ReplyMessageContext);
-  const { setEditingMessage, editingMessage } = useContext(EditMessageContext);
-  const { user = {} } = useContext(AuthContext);
-  const [settings, setSettings] = useState([]);
+  const { user } = useContext(AuthContext);
   const [signMessage, setSignMessage] = useLocalStorage("signOption", true);
-  const [channelType, setChannelType] = useState(null);
-  const { t } = useTranslation();
 
-  useEffect(() => {
-    const handleClickAway = (event) => {
-      const menu = document.getElementById('format-menu');
-      if (menu && !menu.contains(event.target)) {
-        menu.style.display = 'none';
-      }
-    };
-    document.addEventListener('mousedown', handleClickAway);
-    return () => document.removeEventListener('mousedown', handleClickAway);
-  }, []);
+  const isAdmin = user?.profile === "admin";
+  const isTicketOwner = user?.id === ownerUser;
+
+  const canWrite = isAdmin || isTicketOwner;
+
 
   useEffect(() => {
     inputRef.current.focus();
-  }, [replyingMessage, editingMessage]);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const { data } = await api.get("/settings");
-        setSettings(data);
-      } catch (err) {
-        console.error(err);
-        toastError(err);
-        setSettings([]);
-      }
-    };
-    fetchSettings();
-  }, []);
-
-  useEffect(() => {
-    if (editingMessage) {
-      setInputMessage(editingMessage.body || "");
-    } else {
-      setInputMessage("");
-    }
-  }, [editingMessage]);
-
-  useEffect(() => {
-    const fetchChannelType = async () => {
-      try {
-        const { data } = await api.get(`/tickets/${ticketId}`);
-        setChannelType(data.whatsapp?.type);
-      } catch (err) {
-        toastError(err);
-      }
-    };
-
-    fetchChannelType();
-  }, [ticketId]);
+  }, [replyingMessage]);
 
   useEffect(() => {
     inputRef.current.focus();
@@ -313,9 +252,8 @@ const MessageInput = ({ ticketStatus }) => {
       setShowEmoji(false);
       setMedias([]);
       setReplyingMessage(null);
-      setEditingMessage(null);
     };
-  }, [ticketId, setReplyingMessage, setEditingMessage]);
+  }, [ticketId, setReplyingMessage]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -324,157 +262,9 @@ const MessageInput = ({ ticketStatus }) => {
     // eslint-disable-next-line
   }, [onDragEnter === true]);
 
-  const showFormatMenu = () => {
-    const selection = window.getSelection();
-    const menuElement = document.getElementById('format-menu');
-    if (!selection?.toString()) {
-      menuElement.style.display = 'none';
-    } else {
-      // Position the formatting menu near the selection
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      menuElement.style.display = 'flex';
-      menuElement.style.top = `${rect.top - 40}px`;
-      menuElement.style.left = `${rect.left}px`;
-    }
-  };
-
-  const formatText = (prefix, suffix) => {
-    const selection = window.getSelection();
-    const selectedText = selection.toString().trim();
-    if (selectedText) {
-      let formattedText = `${prefix}${selectedText}${suffix}`;
-      const textArea = inputRef.current;
-      const start = textArea.selectionStart;
-      const end = textArea.selectionEnd;
-      const textBefore = inputMessage.substring(0, start);
-      const textAfter = inputMessage.substring(end);
-      
-      const prevChar = textBefore.charAt(start - 1);
-      if (prevChar && prevChar !== ' ' && prevChar !== '\n') {
-        formattedText = ` ${formattedText}`;
-      }
-      
-      const nextChar = textAfter.charAt(0);
-      if (nextChar && nextChar !== ' ' && nextChar !== '\n') {
-        formattedText = `${formattedText} `;
-      }
-      
-      setInputMessage(textBefore + formattedText + textAfter);
-      document.getElementById('format-menu').style.display = 'none';
-      setTimeout(() => {
-        textArea.focus();
-        textArea.setSelectionRange(
-          start + prefix.length - 1,
-          start + prefix.length + formattedText.length - 1
-        );
-        showFormatMenu();
-      }, 0);
-    }
-  };
-
-  const splitSelectionLines = () => {
-    const selection = window.getSelection();
-    const selectedText = selection.toString();
-    if (selectedText) {
-      const textArea = inputRef.current;
-      const start = textArea.selectionStart;
-      const end = textArea.selectionEnd;
-
-      const firstLineStart = inputMessage.substring(0, start).lastIndexOf("\n")+1;
-      const lastLineEnd = end+inputMessage.substring(end).indexOf("\n");
-      const textBefore = inputMessage.substring(0, firstLineStart);
-      const textAfter = inputMessage.substring(lastLineEnd);
-
-      const lines = inputMessage.substring(firstLineStart, lastLineEnd).split('\n');
-      return { lines, textBefore, textAfter };
-    }
-    return { lines: [], textBefore: inputMessage, textAfter: "" };
-  };
-
-  const formatCode = () => {
-    const selection = window.getSelection();
-    if (selection.toString().indexOf('\n') === -1) {
-      formatText('`', '`');
-      return;
-    }
-      
-    const { lines, textBefore, textAfter } = splitSelectionLines();
-    if (lines.length > 0) {
-      const formattedText = "```\n" + lines.join('\n') + "\n```\n";
-      setInputMessage(textBefore + formattedText + textAfter);
-      setTimeout(() => {
-        const textArea = inputRef.current;
-        textArea.focus();
-        textArea.setSelectionRange(
-          textBefore.length,
-          textBefore.length + formattedText.length
-        );
-        showFormatMenu();
-      }, 0);
-    }
-  };
-          
-  const formatListNumbered = () => {
-    const { lines, textBefore, textAfter } = splitSelectionLines();
-    if (lines.length > 0) {
-      const formattedLines = lines.map((line, index) => `${index + 1}. ${line}`);
-      const formattedText = formattedLines.join('\n');
-
-      setInputMessage(textBefore + formattedText + textAfter);
-      setTimeout(() => {
-        const textArea = inputRef.current;
-        textArea.focus();
-        textArea.setSelectionRange(
-          textBefore.length,
-          textBefore.length + formattedText.length
-        );
-        showFormatMenu();
-      }, 0);
-    }
-  };
-
-  const formatListBulleted = () => {
-    const { lines, textBefore, textAfter } = splitSelectionLines();
-    if (lines.length > 0) {
-      const formattedLines = lines.map(line => `* ${line}`);
-      const formattedText = formattedLines.join('\n');
-
-      setInputMessage(textBefore + formattedText + textAfter);
-      setTimeout(() => {
-        const textArea = inputRef.current;
-        textArea.focus();
-        textArea.setSelectionRange(
-          textBefore.length,
-          textBefore.length + formattedText.length
-        );
-        showFormatMenu();
-      }, 0);
-    }
-  };
-
-  const formatQuote = () => {
-    const { lines, textBefore, textAfter } = splitSelectionLines();
-    if (lines.length > 0) {
-      const formattedLines = lines.map(line => `> ${line}`);
-      const formattedText = formattedLines.join('\n');
-
-      setInputMessage(textBefore + formattedText + textAfter);
-      setTimeout(() => {
-        const textArea = inputRef.current;
-        textArea.focus();
-        textArea.setSelectionRange(
-          textBefore.length,
-          textBefore.length + formattedText.length
-        );
-        showFormatMenu();
-      }, 0);
-    }
-  };
-
   const capitalizeFirstLetter = (string) => {
     return string.charAt(0).toUpperCase() + string.slice(1);
-  };
+  }
 
   const handleChangeInput = (e) => {
     setInputMessage(e.target.value);
@@ -515,33 +305,29 @@ const MessageInput = ({ ticketStatus }) => {
   };
 
   const handleUploadMedia = async (e) => {
-    if (!e || !e.preventDefault) {
-      console.error("Evento inválido ou não fornecido!");
-      return;
-    }
+    if (!canWrite) return toastError("Sem permissão!");
     setLoading(true);
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+    }
     const formData = new FormData();
     formData.append("fromMe", true);
     medias.forEach((media) => {
       formData.append("medias", media);
       formData.append("body", media.name);
     });
-
     try {
-      if (channelType !== null) {
-        await api.post(`/hub-message/${ticketId}`, formData);
-      } else {
-        await api.post(`/messages/${ticketId}`, formData);
-      }
+      await api.post(`/messages/${ticketId}`, formData);
     } catch (err) {
       toastError(err);
     }
+
     setLoading(false);
     setMedias([]);
   };
 
   const handleSendMessage = async () => {
+    if (!canWrite) return toastError("Sem permissão!");
     if (inputMessage.trim() === "") return;
     setLoading(true);
     const message = {
@@ -554,23 +340,14 @@ const MessageInput = ({ ticketStatus }) => {
       quotedMsg: replyingMessage,
     };
     try {
-      if (editingMessage !== null) {
-        await api.post(`/messages/edit/${editingMessage.id}`, message);
-      } else {
-        if (channelType !== null) {
-          await api.post(`/hub-message/${ticketId}`, message);
-        } else {
-          await api.post(`/messages/${ticketId}`, message);
-        }
-      }
+      await api.post(`/messages/${ticketId}`, message);
     } catch (err) {
-      toastError(err, t);
+      toastError(err);
     }
     setInputMessage("");
     setShowEmoji(false);
     setLoading(false);
     setReplyingMessage(null);
-    setEditingMessage(null);
   };
 
   const handleStartRecording = async () => {
@@ -589,9 +366,8 @@ const MessageInput = ({ ticketStatus }) => {
   const handleLoadQuickAnswer = async (value) => {
     if (value && value.indexOf("/") === 0) {
       try {
-        const shortcut = value.substring(1).trim();
         const { data } = await api.get("/quickAnswers/", {
-          params: { searchParam: shortcut },
+          params: { searchParam: inputMessage.substring(1) },
         });
         setQuickAnswer(data.quickAnswers);
         if (data.quickAnswers.length > 0) {
@@ -608,6 +384,7 @@ const MessageInput = ({ ticketStatus }) => {
   };
 
   const handleUploadAudio = async () => {
+    if (!canWrite) return toastError("Sem permissão!");
     setLoading(true);
     try {
       const [, blob] = await Mp3Recorder.stop().getMp3();
@@ -622,11 +399,8 @@ const MessageInput = ({ ticketStatus }) => {
       formData.append("medias", blob, filename);
       formData.append("body", filename);
       formData.append("fromMe", true);
-      if (channelType !== null) {
-        await api.post(`/hub-message/${ticketId}`, formData);
-      } else {
-        await api.post(`/messages/${ticketId}`, formData);
-      }
+
+      await api.post(`/messages/${ticketId}`, formData);
     } catch (err) {
       toastError(err);
     }
@@ -652,13 +426,6 @@ const MessageInput = ({ ticketStatus }) => {
     setAnchorEl(null);
   };
 
-  const canSignMessage = () => {
-    return (
-      (settings && settings.some(s => s.key === "signOption" && s.value === "enabled")) ||
-      (user && user.profile === "admin")
-    );
-  };
-
   const renderReplyingMessage = (message) => {
     return (
       <div className={classes.replyginMsgWrapper}>
@@ -681,10 +448,7 @@ const MessageInput = ({ ticketStatus }) => {
           aria-label="showRecorder"
           component="span"
           disabled={loading || ticketStatus !== "open"}
-          onClick={() => {
-            setReplyingMessage(null);
-            setEditingMessage(null);
-          }}
+          onClick={() => setReplyingMessage(null)}
         >
           <Clear className={classes.sendMessageIcons} />
         </IconButton>
@@ -716,7 +480,7 @@ const MessageInput = ({ ticketStatus }) => {
         ) : (
           <Grid item className={classes.gridFiles}>
             <Typography variant="h6" component="div">
-              {t("uploads.titles.titleFileList")} ({medias.length})
+              {i18n.t("uploads.titles.titleFileList")} ({medias.length})
             </Typography>
             <List>
               {medias.map((value, index) => {
@@ -735,14 +499,14 @@ const MessageInput = ({ ticketStatus }) => {
             </List>
             <InputBase
               style={{ width: "0", height: "0" }}
-              inputRef={(input) => {
-                if (input !== null) {
+              inputRef={function (input) {
+                if (input != null) {
                   input.focus();
                 }
               }}
-              onKeyDown={(e) => {
+              onKeyPress={(e) => {
                 if (e.key === "Enter") {
-                  handleUploadMedia(e);
+                  handleUploadMedia();
                 }
               }}
               defaultValue={medias[0].name}
@@ -769,15 +533,15 @@ const MessageInput = ({ ticketStatus }) => {
         onDrop={(e) => handleInputDrop(e)}
       >
         <div className={onDragEnter ? classes.dropInfo : classes.dropInfoOut}>
-          {t("uploads.titles.titleUploadMsgDragDrop")}
+          {i18n.t("uploads.titles.titleUploadMsgDragDrop")}
         </div>
-        {(replyingMessage && renderReplyingMessage(replyingMessage)) || (editingMessage && renderReplyingMessage(editingMessage))}
+        {replyingMessage && renderReplyingMessage(replyingMessage)}
         <div className={classes.newMessageBox}>
           <Hidden only={["sm", "xs"]}>
             <IconButton
               aria-label="emojiPicker"
               component="span"
-              disabled={loading || recording || ticketStatus !== "open"}
+              disabled={loading || recording || ticketStatus !== "open" || !canWrite}
               onClick={(e) => setShowEmoji((prevState) => !prevState)}
             >
               <Mood className={classes.sendMessageIcons} />
@@ -788,7 +552,7 @@ const MessageInput = ({ ticketStatus }) => {
                   <Picker
                     perLine={16}
                     theme={"dark"}
-                    i18n={t}
+                    i18n={i18n}
                     showPreview={true}
                     showSkinTones={false}
                     onSelect={handleAddEmoji}
@@ -809,35 +573,28 @@ const MessageInput = ({ ticketStatus }) => {
               <IconButton
                 aria-label="upload"
                 component="span"
-                disabled={loading || recording || ticketStatus !== "open"}
+                disabled={loading || recording || ticketStatus !== "open" || !canWrite}
                 onMouseOver={() => setOnDragEnter(true)}
               >
                 <AttachFile className={classes.sendMessageIcons} />
               </IconButton>
             </label>
-            {canSignMessage() && (
             <FormControlLabel
               style={{ marginRight: 7, color: "primary" }}
-              label={t("messagesInput.signMessage")}
+              label={i18n.t("messagesInput.signMessage")}
               labelPlacement="start"
               control={
                 <Switch
                   size="small"
-                  checked={signMessage || false}
+                  checked={signMessage}
                   onChange={(e) => {
-                    try {
-                      setSignMessage(e.target.checked);
-                    } catch (err) {
-                      console.error(err);
-                      toastError(err);
-                    }
+                    setSignMessage(e.target.checked);
                   }}
                   name="showAllTickets"
                   color="secondary"
                 />
               }
             />
-            )}
           </Hidden>
           <Hidden only={["md", "lg", "xl"]}>
             <IconButton
@@ -858,7 +615,7 @@ const MessageInput = ({ ticketStatus }) => {
                 <IconButton
                   aria-label="emojiPicker"
                   component="span"
-                  disabled={loading || recording || ticketStatus !== "open"}
+                  disabled={loading || recording || ticketStatus !== "open" || !canWrite}
                   onClick={(e) => setShowEmoji((prevState) => !prevState)}
                 >
                   <Mood className={classes.sendMessageIcons} />
@@ -869,7 +626,7 @@ const MessageInput = ({ ticketStatus }) => {
                   multiple
                   type="file"
                   id="upload-button"
-                  disabled={loading || recording || ticketStatus !== "open"}
+                  disabled={loading || recording || ticketStatus !== "open" || !canWrite}
                   className={classes.uploadInput}
                   onChange={handleChangeMedias}
                 />
@@ -877,141 +634,59 @@ const MessageInput = ({ ticketStatus }) => {
                   <IconButton
                     aria-label="upload"
                     component="span"
-                    disabled={loading || recording || ticketStatus !== "open"}
+                    disabled={loading || recording || ticketStatus !== "open" || !canWrite}
                   >
                     <AttachFile className={classes.sendMessageIcons} />
                   </IconButton>
                 </label>
               </MenuItem>
               <MenuItem onClick={handleMenuItemClick}>
-                {canSignMessage() && (
                 <FormControlLabel
                   style={{ marginRight: 7, color: "gray" }}
-                  label={t("messagesInput.signMessage")}
+                  label={i18n.t("messagesInput.signMessage")}
                   labelPlacement="start"
                   control={
                     <Switch
                       size="small"
-                      checked={signMessage || false}
+                      checked={signMessage}
                       onChange={(e) => {
-                        try {
-                          setSignMessage(e.target.checked);
-                        } catch (err) {
-                          console.error(err);
-                          toastError(err);
-                        }
+                        setSignMessage(e.target.checked);
                       }}
                       name="showAllTickets"
                       color="primary"
                     />
                   }
                 />
-                )}
               </MenuItem>
             </Menu>
           </Hidden>
           <div className={classes.messageInputWrapper}>
             <InputBase
-              className={classes.messageInputField}
-              inputRef={inputRef}
+              inputRef={(input) => {
+                input && input.focus();
+                input && (inputRef.current = input);
+              }}
+              className={classes.messageInput}
               placeholder={
                 ticketStatus === "open"
-                  ? t("messagesInput.placeholderOpen")
-                  : t("messagesInput.placeholderClosed")
+                  ? i18n.t("messagesInput.placeholderOpen")
+                  : i18n.t("messagesInput.placeholderClosed")
               }
               multiline
               maxRows={5}
               value={capitalizeFirstLetter(inputMessage)}
               onChange={handleChangeInput}
-              disabled={recording || loading || ticketStatus !== "open"}
+              disabled={recording || loading || ticketStatus !== "open" || !canWrite}
               onPaste={(e) => {
                 ticketStatus === "open" && handleInputPaste(e);
               }}
-              onMouseUp={showFormatMenu}
-              onKeyUp={showFormatMenu}
-              onKeyDown={(e) => {
-                if (e.ctrlKey && e.key === 'b') {
-                  e.preventDefault();
-                  formatText('*', '*');
-                } else if (e.ctrlKey && e.key === 'i') {
-                  e.preventDefault();
-                  formatText('_', '_');
-                } else if (e.ctrlKey && e.key === 's') {
-                  e.preventDefault();
-                  formatText('~', '~');
-                } else if (e.ctrlKey && e.key === 'm') {
-                  e.preventDefault();
-                  formatCode();
-                } else if (e.ctrlKey && e.key === 'q') {
-                  e.preventDefault();
-                  formatQuote();
-                } else if (e.ctrlKey && e.key === 'n') {
-                  e.preventDefault();
-                  formatListNumbered();
-                } else if (e.ctrlKey && e.key === 'l') {
-                  e.preventDefault();
-                  formatListBulleted();
-                } else if (loading || e.shiftKey) return;
+              onKeyPress={(e) => {
+                if (loading || e.shiftKey) return;
                 else if (e.key === "Enter") {
                   handleSendMessage();
                 }
               }}
             />
-            <div
-              id="format-menu"
-              className={classes.formatMenu}
-              style={{ display: 'none', position: 'absolute', zIndex: 1000 }}
-            >
-              <IconButton 
-                size="small" 
-                onClick={() => formatText('*','*')}
-                style={{ padding: '6px', margin: '0 2px' }}
-              >
-                <Typography style={{ fontWeight: 'bold', fontSize: '15px', color: '#444' }}>B</Typography>
-              </IconButton>
-              <IconButton 
-                size="small" 
-                onClick={() => formatText('_','_')}
-                style={{ padding: '6px', margin: '0 2px' }}
-              >
-                <Typography style={{ fontStyle: 'italic', fontSize: '15px', color: '#444' }}>I</Typography>
-              </IconButton>
-              <IconButton 
-                size="small" 
-                onClick={() => formatText('~','~')}
-                style={{ padding: '6px', margin: '0 2px' }}
-              >
-                <Typography style={{ textDecoration: 'line-through', fontSize: '15px', color: '#444' }}>S</Typography>
-              </IconButton>
-              <IconButton 
-                size="small" 
-                onClick={formatCode}
-                style={{ padding: '6px', margin: '0 2px' }}
-              >
-                <Code fontSize="small" style={{ color: '#444' }} />
-              </IconButton>
-              <IconButton 
-                size="small" 
-                onClick={formatListNumbered}
-                style={{ padding: '6px', margin: '0 2px' }}
-              >
-                <FormatListNumbered fontSize="small" style={{ color: '#444' }} />
-              </IconButton>
-              <IconButton 
-                size="small" 
-                onClick={formatListBulleted}
-                style={{ padding: '6px', margin: '0 2px' }}
-              >
-                <FormatListBulleted fontSize="small" style={{ color: '#444' }} />
-              </IconButton>
-              <IconButton 
-                size="small" 
-                onClick={formatQuote}
-                style={{ padding: '6px', margin: '0 2px' }}
-              >
-                <FormatQuote fontSize="small" style={{ color: '#444' }} />
-              </IconButton>
-            </div>
             {typeBar ? (
               <ul className={classes.messageQuickAnswersWrapper}>
                 {quickAnswers.map((value, index) => {
@@ -1073,7 +748,7 @@ const MessageInput = ({ ticketStatus }) => {
             <IconButton
               aria-label="showRecorder"
               component="span"
-              disabled={loading || ticketStatus !== "open"}
+              disabled={loading || ticketStatus !== "open" || !canWrite}
               onClick={handleStartRecording}
             >
               <Mic className={classes.sendMessageIcons} />
@@ -1084,9 +759,5 @@ const MessageInput = ({ ticketStatus }) => {
     );
   }
 };
-
-MessageInput.propTypes = {
-  ticketStatus: PropTypes.string
-}
 
 export default MessageInput;

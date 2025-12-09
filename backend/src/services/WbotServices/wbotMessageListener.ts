@@ -1,37 +1,37 @@
 /* eslint-disable no-plusplus */
 /* eslint-disable no-nested-ternary */
-import * as Sentry from "@sentry/node";
-import { writeFile } from "fs";
 import { join } from "path";
 import { promisify } from "util";
+import { writeFile } from "fs";
+import * as Sentry from "@sentry/node";
+
+
 
 import {
-  Client,
-  MessageAck,
   Contact as WbotContact,
-  Message as WbotMessage
+  Message as WbotMessage,
+  MessageAck,
+  Client
 } from "whatsapp-web.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import Contact from "../../models/Contact";
-import Integration from "../../models/Integration";
-import Message from "../../models/Message";
-import OldMessage from "../../models/OldMessage";
-import Settings from "../../models/Setting";
 import Ticket from "../../models/Ticket";
+import Message from "../../models/Message";
+import Settings from "../../models/Setting";
+import Integration from "../../models/Integration";
 
-import { debounce } from "../../helpers/Debounce";
-import formatBody from "../../helpers/Mustache";
 import { getIO } from "../../libs/socket";
-import { logger } from "../../utils/logger";
-import CreateContactService from "../ContactServices/CreateContactService";
-import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
-import GetContactService from "../ContactServices/GetContactService";
 import CreateMessageService from "../MessageServices/CreateMessageService";
+import { logger } from "../../utils/logger";
+import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
-import UpdateTicketService from "../TicketServices/UpdateTicketService";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
+import { debounce } from "../../helpers/Debounce";
+import UpdateTicketService from "../TicketServices/UpdateTicketService";
+import CreateContactService from "../ContactServices/CreateContactService";
+import formatBody from "../../helpers/Mustache";
 
 ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
 
@@ -44,9 +44,12 @@ interface Session extends Client {
 const writeFileAsync = promisify(writeFile);
 
 const verifyContact = async (msgContact: WbotContact): Promise<Contact> => {
+  const profilePicUrl = await msgContact.getProfilePicUrl();
+
   const contactData = {
     name: msgContact.name || msgContact.pushname || msgContact.id.user,
     number: msgContact.id.user,
+    profilePicUrl,
     isGroup: msgContact.isGroup
   };
 
@@ -92,6 +95,7 @@ const verifyRevoked = async (msgBody?: string): Promise<void> => {
     }
 
     if (message) {
+      //console.log(message);
       await Message.update(
         { isDeleted: true },
         {
@@ -109,12 +113,10 @@ const verifyRevoked = async (msgBody?: string): Promise<void> => {
         return;
       }
 
-      io.to(msgIsDeleted.ticketId.toString())
-        .to("notification")
-        .emit("appMessage", {
-          action: "update",
-          message: msgIsDeleted
-        });
+      io.to(msgIsDeleted.ticketId.toString()).emit("appMessage", {
+        action: "update",
+        message: msgIsDeleted
+      });
     }
   } catch (err) {
     Sentry.captureException(err);
@@ -137,13 +139,11 @@ const verifyMediaMessage = async (
 
   if (!media.filename) {
     const ext = media.mimetype.split("/")[1].split(";")[0];
-    const shortTime = new Date().getTime().toString().slice(-6);
-    const sanitizedName = contact.name.replace(/[^a-zA-Z0-9_]/g, "_");
-    media.filename = `${sanitizedName}_${shortTime}.${ext}`;
+    media.filename = `${new Date().getTime()}.${ext}`;
   } else {
     const originalFilename = media.filename ? `-${media.filename}` : "";
-    const shortTime = new Date().getTime().toString().slice(-6);
-    media.filename = `${shortTime}_${originalFilename}`;
+    // Always write a random filename
+    media.filename = `${new Date().getTime()}${originalFilename}`;
   }
 
   try {
@@ -153,6 +153,8 @@ const verifyMediaMessage = async (
       "base64"
     )
       .then(() => {
+        console.log("Arquivo salvo com sucesso!");
+
         const inputFile = `./public/${media.filename}`;
         let outputFile: string;
 
@@ -161,8 +163,13 @@ const verifyMediaMessage = async (
         } else if (inputFile.endsWith(".ogg")) {
           outputFile = inputFile.replace(".ogg", ".mp3");
         } else {
+          // Trate outros formatos de arquivo conforme necessário
+          console.error("Formato de arquivo não suportado:", inputFile);
           return;
         }
+
+        console.log("Input File:", inputFile);
+        console.log("Output File:", outputFile);
 
         return new Promise<void>((resolve, reject) => {
           ffmpeg(inputFile)
@@ -189,76 +196,19 @@ const verifyMediaMessage = async (
     logger.error(err);
   }
 
-  let $tipoArquivo: string;
-
-  switch (media.mimetype.split("/")[0]) {
-    case "audio":
-      $tipoArquivo = "🔉 Mensagem de audio";
-      break;
-
-    case "image":
-      $tipoArquivo = "🖼️ Arquivo de imagem";
-      break;
-
-    case "video":
-      $tipoArquivo = "🎬 Arquivo de vídeo";
-      break;
-
-    case "document":
-      $tipoArquivo = "📘 Documento";
-      break;
-
-    case "application":
-      $tipoArquivo = "📎 Arquivo";
-      break;
-
-    case "ciphertext":
-      $tipoArquivo = "⚠️ Notificação";
-      break;
-
-    case "e2e_notification":
-      $tipoArquivo = "⛔ Notificação";
-      break;
-
-    case "revoked":
-      $tipoArquivo = "❌ Apagado";
-      break;
-
-    default:
-      $tipoArquivo = "🤷‍♂️ Tipo Desconhecido";
-      break;
-  }
-
-  let $strBody: string;
-
-  if (msg.fromMe === true) {
-    $strBody = msg.body;
-  } else {
-    $strBody = msg.body;
-  }
-
   const messageData = {
     id: msg.id.id,
     ticketId: ticket.id,
     contactId: msg.fromMe ? undefined : contact.id,
-    body: $strBody || media.filename,
+    body: msg.body,
     fromMe: msg.fromMe,
     read: msg.fromMe,
     mediaUrl: media.filename,
     mediaType: media.mimetype.split("/")[0],
-    quotedMsgId: quotedMsg?.id,
-    userId: ticket.userId
+    quotedMsgId: quotedMsg?.id
   };
 
-  if (msg.fromMe === true) {
-    await ticket.update({
-      lastMessage: `🢅 ${$tipoArquivo}` || `🢅 ${$tipoArquivo}`
-    });
-  } else {
-    await ticket.update({
-      lastMessage: `🢇 ${$tipoArquivo}` || `🢇 ${$tipoArquivo}`
-    });
-  }
+  await ticket.update({ lastMessage: msg.body });
   const newMessage = await CreateMessageService({ messageData });
 
   return newMessage;
@@ -308,11 +258,16 @@ const prepareLocation = async (msg: WbotMessage): Promise<WbotMessage> => {
   return msg;
 };
 
+
 const verifyMessage = async (
   msg: WbotMessage,
   ticket: Ticket,
   contact: Contact
 ) => {
+  if (!msg || !msg.id || !msg.type) {
+    console.warn("verifyMessage recebeu msg inválida:", msg);
+    return;
+  }
   if (msg.type === "location") msg = await prepareLocation(msg);
 
   const quotedMsg = await verifyQuotedMessage(msg);
@@ -324,167 +279,27 @@ const verifyMessage = async (
     fromMe: msg.fromMe,
     mediaType: msg.type,
     read: msg.fromMe,
-    quotedMsgId: quotedMsg?.id,
-    userId: ticket.userId
+    quotedMsgId: quotedMsg?.id
   };
 
-  if (msg.type === "multi_vcard") {
-
-    if (!msg.body || msg.body === "") {
-
-      if (msg.vCards && Array.isArray(msg.vCards) && msg.vCards.length > 0) {
-        const extractedContacts = [];
-
-        const vcardLines = msg.vCards.join(',').split('\n');
-
-        let currentName = '';
-        let currentNumber = '';
-
-        for (let i = 0; i < vcardLines.length; i++) {
-          const line = vcardLines[i];
-
-          const parts = line.split(':');
-
-          if (parts.length >= 2) {
-            const key = parts[0];
-            const value = parts.slice(1).join(':');
-
-            if (key === 'FN') {
-              currentName = value.trim();
-            } else if (key.includes('TEL') && value) {
-              currentNumber = value.trim();
-
-              if (currentName && currentNumber) {
-                extractedContacts.push({
-                  name: currentName,
-                  number: currentNumber
-                });
-              }
-            }
-          }
-        }
-
-        const processedContacts = [];
-
-        for (const contact of extractedContacts) {
-          try {
-
-            try {
-              const cont = await CreateContactService({
-                name: contact.name,
-                number: contact.number.replace(/\D/g, "")
-              });
-              processedContacts.push({
-                id: cont.id,
-                name: cont.name,
-                number: cont.number
-              });
-            } catch (error) {
-              if (error.message === "ERR_DUPLICATED_CONTACT") {
-                const cont = await GetContactService({
-                  name: contact.name,
-                  number: contact.number.replace(/\D/g, ""),
-                  email: ""
-                });
-                processedContacts.push({
-                  id: cont.id,
-                  name: cont.name,
-                  number: cont.number
-                });
-              } else {
-                throw error;
-              }
-            }
-          } catch (err) {
-            console.error(`Error processing contact ${contact.name}:`, err);
-          }
-        }
-
-        if (processedContacts.length > 0) {
-          const jsonData = JSON.stringify(processedContacts);
-
-          try {
-            const testParse = JSON.parse(jsonData);
-
-            messageData.body = jsonData;
-            msg.body = messageData.body;
-          } catch (jsonError) {
-            console.error("Error parsing JSON:", jsonError);
-            messageData.body = JSON.stringify([{
-              id: 0,
-              name: "Contato do vCard",
-              number: "Número não disponível"
-            }]);
-            msg.body = messageData.body;
-          }
-        } else {
-          messageData.body = JSON.stringify([{
-            id: 0,
-            name: "Contato do vCard",
-            number: "Número não disponível"
-          }]);
-          msg.body = messageData.body;
-        }
-      } else {
-        messageData.body = JSON.stringify([{
-          id: 0,
-          name: "Contato do vCard",
-          number: "Número não disponível"
-        }]);
-        msg.body = messageData.body;
-      }
-    } else {
-      try {
-        const bodyObj = JSON.parse(msg.body);
-        if (!Array.isArray(bodyObj)) {
-          console.warn("multi_vcard body is not an array, converting to array");
-          messageData.body = JSON.stringify([bodyObj]);
-          msg.body = messageData.body;
-        }
-      } catch (error) {
-        console.error("Error parsing existing multi_vcard body:", error);
-        messageData.body = JSON.stringify([{
-          id: 0,
-          name: "Contato do vCard",
-          number: "Número não disponível"
-        }]);
-        msg.body = messageData.body;
-      }
-    }
-  }
-
-  if (msg.fromMe === true) {
+   if (msg.fromMe === true) {
     await ticket.update({
       fromMe: msg.fromMe,
       lastMessage:
         msg.type === "location"
-          ? "🢅 🌍 Localization - Ver no Google Maps"
-          : `🢅 ${msg.body}`
+          ? "🌍 Localization - Ver no Google Maps"
+          : `${msg.body}`
     });
   } else {
     await ticket.update({
       lastMessage:
         msg.type === "location"
-          ? "🢇 🌍 Localization - Ver no Google Maps"
-          : `🢇 ${msg.body}`
+          ? "🌍 Localization - Ver no Google Maps"
+          : `${msg.body}`
     });
   }
 
   await CreateMessageService({ messageData });
-};
-
-let greetingCounts: { [contactId: string]: number } = {};
-const greetingLimit = (5 * 2);
-let resetGreetingCountTimeout: NodeJS.Timeout;
-
-const resetGreetingCounts = () => {
-  greetingCounts = {};
-  console.log("Contadores de saudações resetados.");
-};
-
-const startGreetingCountResetTimer = () => {
-  clearTimeout(resetGreetingCountTimeout);
-  resetGreetingCountTimeout = setTimeout(resetGreetingCounts, 1800000); // 30 minutos
 };
 
 const verifyQueue = async (
@@ -497,27 +312,11 @@ const verifyQueue = async (
     wbot.id!
   );
 
-  const queueLengthSetting = await ListSettingsServiceOne({ key: "queueLength" });
-  const queueLength = queueLengthSetting?.value;
-  const queueValue = queueLength === "enabled" ? 0 : 1;
-
-  if (queues.length === queueValue) {
+  if (queues.length === 1) {
     await UpdateTicketService({
       ticketData: { queueId: queues[0].id },
       ticketId: ticket.id
     });
-
-    const chat = await msg.getChat();
-    await chat.sendStateTyping();
-
-    const body = formatBody(`\u200e${queues[0].greetingMessage}`, ticket);
-
-    const sentMessage = await wbot.sendMessage(
-      `${contact.number}@c.us`,
-      body
-    );
-
-    await verifyMessage(sentMessage, ticket, contact);
 
     return;
   }
@@ -544,8 +343,6 @@ const verifyQueue = async (
     const horatermino = hhtermino + mmtermino;
 
     if (hora < horainicio || hora > horatermino) {
-      const chat = await msg.getChat();
-      await chat.sendStateTyping();
       const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
       const debouncedSentMessage = debounce(
         async () => {
@@ -571,40 +368,25 @@ const verifyQueue = async (
 
       const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
-      const debouncedSentMessage = debounce(
-        async () => {
-          const sentMessage = await wbot.sendMessage(
-            `${contact.number}@c.us`,
-            body
-          );
-          verifyMessage(sentMessage, ticket, contact);
-        },
-        3000,
-        ticket.id
+      const sentMessage = await wbot.sendMessage(
+        `${contact.number}@c.us`,
+        body
       );
-      debouncedSentMessage();
+
+      await verifyMessage(sentMessage, ticket, contact);
     }
   } else {
     let options = "";
 
-    const contactId = contact.id.toString();
-    if (!greetingCounts[contactId]) {
-      greetingCounts[contactId] = 0;
-    }
-
-    if (greetingCounts[contactId] < greetingLimit) {
-      const chat = await msg.getChat();
-      await chat.sendStateTyping();
-      greetingCounts[contactId]++;
-      console.log(`Contador de saudações para ${contactId}:`, greetingCounts[contactId]);
-      startGreetingCountResetTimer();
-    }
+    const chat = await msg.getChat();
+    await chat.sendStateTyping();
 
     queues.forEach((queue, index) => {
       if (queue.startWork && queue.endWork) {
         if (isDisplay) {
-          options += `*${index + 1}* - ${queue.name} das ${queue.startWork
-            } as ${queue.endWork}\n`;
+          options += `*${index + 1}* - ${queue.name} das ${
+            queue.startWork
+          } as ${queue.endWork}\n`;
         } else {
           options += `*${index + 1}* - ${queue.name}\n`;
         }
@@ -613,69 +395,21 @@ const verifyQueue = async (
       }
     });
 
-    if (queues.length >= 2) {
-      if (greetingCounts[contactId] < greetingLimit) {
-        const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
+    const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
 
-        const debouncedSentMessage = debounce(
-          async () => {
-            const sentMessage = await wbot.sendMessage(
-              `${contact.number}@c.us`,
-              body
-            );
-            verifyMessage(sentMessage, ticket, contact);
-          },
-          3000,
-          ticket.id
+    const debouncedSentMessage = debounce(
+      async () => {
+        const sentMessage = await wbot.sendMessage(
+          `${contact.number}@c.us`,
+          body
         );
+        verifyMessage(sentMessage, ticket, contact);
+      },
+      3000,
+      ticket.id
+    );
 
-        debouncedSentMessage();
-        greetingCounts[contactId]++;
-        console.log(`Contador de saudações para ${contactId}:`, greetingCounts[contactId]);
-        startGreetingCountResetTimer();
-      } else {
-        console.log(`Limite de saudações atingido para ${contactId}.`);
-      }
-    } else {
-      await UpdateTicketService({
-        ticketData: { queueId: queues[0].id },
-        ticketId: ticket.id
-      });
-
-      const body = formatBody(`\u200e${greetingMessage}`, ticket);
-      const body2 = formatBody(`\u200e${queues[0].greetingMessage}`, ticket);
-
-      const debouncedSentMessage = debounce(
-        async () => {
-          const sentMessage = await wbot.sendMessage(
-            `${contact.number}@c.us`,
-            body
-          );
-          verifyMessage(sentMessage, ticket, contact);
-        },
-        3000,
-        ticket.id
-      );
-
-      debouncedSentMessage();
-
-      setTimeout(() => {
-        const debouncedSecondMessage = debounce(
-          async () => {
-            const sentMessage = await wbot.sendMessage(
-              `${contact.number}@c.us`,
-              body2
-            );
-            verifyMessage(sentMessage, ticket, contact);
-          },
-          2000,
-          ticket.id
-        );
-
-        debouncedSecondMessage();
-      }, 5000);
-    }
-
+    debouncedSentMessage();
   }
 };
 
@@ -687,16 +421,15 @@ const isValidMsg = (msg: WbotMessage): boolean => {
     msg.type === "ptt" ||
     msg.type === "video" ||
     msg.type === "image" ||
-    msg.type === "location" ||
     msg.type === "document" ||
     msg.type === "vcard" ||
     msg.type === "call_log" ||
-    msg.type === "poll_creation" ||
-    msg.type === "multi_vcard" ||
+    // msg.type === "multi_vcard" ||
     msg.type === "sticker" ||
-    msg.type === "notification_template" ||
-    msg.type !== "e2e_notification" || // Ignore Empty Messages Generated When Someone Changes His Account from Personal to Business or vice-versa
-    msg.author !== null // Ignore Group Messages
+    msg.type === "e2e_notification" || // Ignore Empty Messages Generated When Someone Changes His Account from Personal to Business or vice-versa
+    msg.type === "notification_template" || // Ignore Empty Messages Generated When Someone Changes His Account from Personal to Business or vice-versa
+    msg.author !== null || // Ignore Group Messages
+    msg.type === "location"
   )
     return true;
   return false;
@@ -724,7 +457,8 @@ const handleMessage = async (
       json: msg
     };
     try {
-      await request(options); 
+      const response = await request(options);
+      console.log(response.body);
     } catch (error) {
       throw new Error(error);
     }
@@ -741,7 +475,7 @@ const handleMessage = async (
       msg.type === "e2e_notification" ||
       msg.type === "notification_template" ||
       msg.from === "status@broadcast" ||
-      // msg.author !== null ||
+      msg.author != null ||
       chat.isGroup
     ) {
       return;
@@ -752,8 +486,6 @@ const handleMessage = async (
   try {
     let msgContact: WbotContact;
     let groupContact: Contact | undefined;
-    let userId;
-    let queueId;
 
     if (msg.fromMe) {
       // messages sent automatically by wbot have a special character in front of it
@@ -768,7 +500,7 @@ const handleMessage = async (
         msg.type !== "location" &&
         msg.type !== "chat" &&
         msg.type !== "vcard"
-        && msg.type !== "multi_vcard"
+        //  && msg.type !== "multi_vcard"
       )
         return;
 
@@ -781,6 +513,14 @@ const handleMessage = async (
     }
 
     const chat = await msg.getChat();
+  
+    // *** MARCAR MENSAGEM COMO LIDA ***
+    if (!msg.fromMe && !chat.isGroup) {
+      await chat.sendSeen();
+      console.log(`Mensagem ${msg.id.id} marcada como lida.`);
+    }
+    // *** FIM MARCAR COMO LIDA ***
+    
 
     if (chat.isGroup) {
       let msgGroupContact;
@@ -803,8 +543,6 @@ const handleMessage = async (
       contact,
       wbot.id!,
       unreadMessages,
-      queueId,
-      userId,
       groupContact
     );
 
@@ -819,8 +557,6 @@ const handleMessage = async (
       contact,
       wbot.id!,
       unreadMessages,
-      userId,
-      queueId,
       groupContact
     );
 
@@ -871,168 +607,66 @@ const handleMessage = async (
       }
     }
 
-    if (msg.type === "multi_vcard") {
-      try {
-        if (!msg.vCards) {
-          console.error("vCards data is undefined");
-          msg.body = JSON.stringify([{
-            id: 0,
-            name: "Contato do vCard",
-            number: "Número não disponível"
-          }]);
-          return;
-        }
-
-        if ((typeof msg.vCards === 'string' && (msg.vCards as string).trim() === '') ||
-          (Array.isArray(msg.vCards) && msg.vCards.length === 0)) {
-          console.error("vCards data is empty");
-          msg.body = JSON.stringify([{
-            id: 0,
-            name: "Contato do vCard",
-            number: "Número não disponível"
-          }]);
-          return;
-        }
-
-        const array = msg.vCards.toString().split("\n");
-
-        let name = "";
-        let number = "";
-        const obj = [];
-        const conts = [];
-
-        for (let index = 0; index < array.length; index++) {
-          const v = array[index];
-
-          const values = v.split(":");
-
-          for (let ind = 0; ind < values.length; ind++) {
-            if (values[ind] && values[ind].indexOf("+") !== -1) {
-              number = values[ind];
-            }
-            if (values[ind] && values[ind].indexOf("FN") !== -1 && values[ind + 1]) {
-              name = values[ind + 1];
-            }
-            if (name !== "" && number !== "") {
-              obj.push({
-                name,
-                number
-              });
-              name = "";
-              number = "";
-            }
-          }
-        }
-
-        if (obj.length === 0) {
-          console.warn("No contacts were extracted from vCard data");
-
-          if (typeof msg.vCards === 'object') {
-            console.info("vCards is an object, stringifying:", JSON.stringify(msg.vCards));
-          }
-
-          if (msg.vCards && typeof msg.vCards === 'object') {
-            try {
-              if (Array.isArray(msg.vCards)) {
-                for (let i = 0; i < msg.vCards.length; i++) {
-                  const vcard = msg.vCards[i];
-
-                  if (typeof vcard === 'string') {
-                    const vcardStr = vcard.toString();
-                    const nameMatch = vcardStr.match(/FN:(.*?)\n/i);
-                    const telMatch = vcardStr.match(/TEL[^:]*:(.*?)\n/i);
-
-                    if (nameMatch || telMatch) {
-                      obj.push({
-                        name: nameMatch ? nameMatch[1].trim() : 'Sem nome',
-                        number: telMatch ? telMatch[1].trim() : ''
-                      });
+    /* if (msg.type === "multi_vcard") {
+                  try {
+                    const array = msg.vCards.toString().split("\n");
+                    let name = "";
+                    let number = "";
+                    const obj = [];
+                    const conts = [];
+                    for (let index = 0; index < array.length; index++) {
+                      const v = array[index];
+                      const values = v.split(":");
+                      for (let ind = 0; ind < values.length; ind++) {
+                        if (values[ind].indexOf("+") !== -1) {
+                          number = values[ind];
+                        }
+                        if (values[ind].indexOf("FN") !== -1) {
+                          name = values[ind + 1];
+                        }
+                        if (name !== "" && number !== "") {
+                          obj.push({
+                            name,
+                            number
+                          });
+                          name = "";
+                          number = "";
+                        }
+                      }
                     }
+
+                    // eslint-disable-next-line no-restricted-syntax
+                    for await (const ob of obj) {
+                      try {
+                        const cont = await CreateContactService({
+                          name: ob.name,
+                          number: ob.number.replace(/\D/g, "")
+                        });
+                        conts.push({
+                          id: cont.id,
+                          name: cont.name,
+                          number: cont.number
+                        });
+                      } catch (error) {
+                        if (error.message === "ERR_DUPLICATED_CONTACT") {
+                          const cont = await GetContactService({
+                            name: ob.name,
+                            number: ob.number.replace(/\D/g, ""),
+                            email: ""
+                          });
+                          conts.push({
+                            id: cont.id,
+                            name: cont.name,
+                            number: cont.number
+                          });
+                        }
+                      }
+                    }
+                    msg.body = JSON.stringify(conts);
+                  } catch (error) {
+                    console.log(error);
                   }
-                }
-              } else {
-                const vcardStr = String(msg.vCards);
-                const vcardParts = vcardStr.split("BEGIN:VCARD");
-
-                for (let i = 1; i < vcardParts.length; i++) {
-                  const part = vcardParts[i];
-
-                  const nameMatch = part.match(/FN:(.*?)\n/i);
-                  const telMatch = part.match(/TEL[^:]*:(.*?)\n/i);
-
-                  if (nameMatch || telMatch) {
-                    obj.push({
-                      name: nameMatch ? nameMatch[1].trim() : 'Sem nome',
-                      number: telMatch ? telMatch[1].trim() : ''
-                    });
-                  }
-                }
-              }
-            } catch (err) {
-              console.error("Error processing vCards object:", err);
-            }
-          }
-        }
-
-        // eslint-disable-next-line no-restricted-syntax
-        for await (const ob of obj) {
-          try {
-            const cont = await CreateContactService({
-              name: ob.name,
-              number: ob.number.replace(/\D/g, "")
-            });
-            conts.push({
-              id: cont.id,
-              name: cont.name,
-              number: cont.number
-            });
-          } catch (error) {
-            if (error.message === "ERR_DUPLICATED_CONTACT") {
-              const cont = await GetContactService({
-                name: ob.name,
-                number: ob.number.replace(/\D/g, ""),
-                email: ""
-              });
-              conts.push({
-                id: cont.id,
-                name: cont.name,
-                number: cont.number
-              });
-            } else {
-              console.error(`Error processing contact ${ob.name}:`, error);
-            }
-          }
-        }
-
-        if (conts.length > 0) {
-          const validContacts = conts.map(contact => ({
-            id: contact.id || 0,
-            name: contact.name || "Contato",
-            number: contact.number || "Número não disponível"
-          }));
-
-          const jsonData = JSON.stringify(validContacts);
-
-          try {
-            JSON.parse(jsonData);
-          } catch (e) {
-            console.error("JSON validation failed:", e);
-          }
-
-          msg.body = jsonData;
-        } else {
-          console.warn("No contacts were processed from multi_vcard");
-
-          msg.body = JSON.stringify([{
-            id: 0,
-            name: "Contato do vCard",
-            number: "Número não disponível"
-          }]);
-        }
-      } catch (error) {
-        console.error("Error processing multi_vcard:", error);
-      }
-    }
+                } */
 
     // eslint-disable-next-line block-scoped-var
     if (msg.type === "call_log" && callSetting === "disabled") {
@@ -1042,14 +676,8 @@ const handleMessage = async (
       );
       await verifyMessage(sentMessage, ticket, contact);
     }
-    const profilePicUrl = await msgContact.getProfilePicUrl();
-    const contactData = {
-      name: msgContact.name || msgContact.pushname || msgContact.id.user,
-      number: msgContact.id.user,
-      profilePicUrl,
-      isGroup: msgContact.isGroup
-    };
-    await CreateOrUpdateContactService(contactData);
+  
+    
   } catch (err) {
     Sentry.captureException(err);
     logger.error(`Error handling whatsapp message: Err: ${err}`);
@@ -1070,10 +698,6 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
           model: Message,
           as: "quotedMsg",
           include: ["contact"]
-        },
-        {
-          model: OldMessage,
-          as: "oldMessages"
         }
       ]
     });
@@ -1081,9 +705,7 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
     if (!messageToUpdate) {
       return;
     }
-
-    const ackToUpdate = ack || 0;
-    await messageToUpdate.update({ ack: ackToUpdate });
+    await messageToUpdate.update({ ack });
 
     io.to(messageToUpdate.ticketId.toString()).emit("appMessage", {
       action: "update",
@@ -1095,52 +717,9 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
   }
 };
 
-const handleMsgEdit = async (
-  msg: WbotMessage,
-  newBody: string,
-  oldBody: string
-): Promise<void> => {
-  let editedMsg = await Message.findByPk(msg.id.id, {
-    include: [
-      {
-        model: OldMessage,
-        as: "oldMessages"
-      }
-    ]
-  });
-
-  if (!editedMsg) return;
-
-  const io = getIO();
-
-  try {
-    const messageData = {
-      messageId: msg.id.id,
-      body: oldBody
-    };
-
-    await OldMessage.upsert(messageData);
-    await editedMsg.update({ body: newBody, isEdited: true });
-
-    await editedMsg.reload();
-
-    io.to(editedMsg.ticketId.toString()).emit("appMessage", {
-      action: "update",
-      message: editedMsg
-    });
-  } catch (err) {
-    Sentry.captureException(err);
-    logger.error(`Error handling message edit. Err: ${err}`);
-  }
-};
-
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
   wbot.on("message_create", async msg => {
     handleMessage(msg, wbot);
-  });
-
-  wbot.on("message_edit", async (msg, newBody, oldBody) => {
-    handleMsgEdit(msg, newBody as string, oldBody as string);
   });
 
   wbot.on("media_uploaded", async msg => {
@@ -1157,6 +736,9 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
       verifyRevoked(msgBody || "");
     }
   });
+
 };
 
-export { handleMessage, handleMsgAck, wbotMessageListener };
+
+
+export { wbotMessageListener, handleMessage, handleMsgAck };

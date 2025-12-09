@@ -1,35 +1,23 @@
-import PropTypes from "prop-types";
 import React from "react";
 
+import Backdrop from "@material-ui/core/Backdrop";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import { styled } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 
-const BackdropStyled = styled('div')(({ theme, open }) => ({
-	zIndex: theme.zIndex.drawer + 1,
-	color: "#fff",
-	display: open ? "flex" : "none",
-	position: "fixed",
-	top: 0,
-	left: 0,
-	right: 0,
-	bottom: 0,
-	alignItems: "center",
-	justifyContent: "center",
-	backgroundColor: "rgba(0, 0, 0, 0.5)"
+const useStyles = makeStyles(theme => ({
+	backdrop: {
+		zIndex: theme.zIndex.drawer + 1,
+		color: "#fff",
+	},
 }));
 
-const BackdropLoading = ({ open = true, color = "inherit", ariaLabel = "Loading..." }) => {
+const BackdropLoading = () => {
+	const classes = useStyles();
 	return (
-		<BackdropStyled open={open} aria-label={ariaLabel}>
-			<CircularProgress color={color} />
-		</BackdropStyled>
+		<Backdrop className={classes.backdrop} open={true}>
+			<CircularProgress color="inherit" />
+		</Backdrop>
 	);
-};
-
-BackdropLoading.propTypes = {
-	open: PropTypes.bool,
-	color: PropTypes.oneOf(["primary", "secondary", "inherit"]),
-	ariaLabel: PropTypes.string,
 };
 
 export default BackdropLoading;
